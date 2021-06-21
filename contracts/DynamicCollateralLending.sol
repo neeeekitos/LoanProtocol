@@ -16,6 +16,7 @@ contract DynamicCollateralLending {
 
     // Store all users with their address
     mapping(address => User) public users;
+    uint addressRegistryCount;
 
     function applyForLoan(uint _requestedAmount, uint _repaymentsCount, uint _interest, bytes32 _loanDescription) public returns(address) {
 
@@ -25,11 +26,11 @@ contract DynamicCollateralLending {
         // The user must not have any loan in progress
         assert(users[msg.sender].activeLoan == address(0));
 
-        Loan loan = new Loan(_requestedAmount, _repaymentsCount, _interest, _loanDescription);
-
-        users[msg.sender].activeLoan = address(loan);
-
-        return address(loan);
+//        Loan loan = new Loan(_requestedAmount, _repaymentsCount, _interest, _loanDescription);
+        users[msg.sender].activeLoan = address(msg.sender);
+//        users[msg.sender].activeLoan = address(loan);
+        return address(0);
+//        return address(loan);
     }
 
 }

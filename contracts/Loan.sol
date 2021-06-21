@@ -8,33 +8,23 @@ contract Loan {
     using SafeMath for uint;
 
     address borrower;
-
     // Requested amount for a loan
     uint requestedAmount;
-
     // Amount to be returned by the borrower (with an interest)
     uint repaymentsCount;
-
     // Loan interest
     uint interest;
-
     // Description of a loan
     bytes32 loanDescription;
-
+    // The money is sent to the user only when the loan is started
+    bool active;
     uint returnAmount;
-
     uint loanCreationDate;
-
     uint lastRepaymentDate;
-
     uint remainingPayments;
-
     uint repaymentInstallment;
-
     uint repaidAmount;
 
-    // Active state of the credit.
-    bool active = true;
 
     mapping(address => bool) public lenders;
 
@@ -130,8 +120,6 @@ contract Loan {
     }
 
     constructor (uint _requestedAmount, uint _repaymentsCount, uint _interest, bytes32 _loanDescription) public {
-
-
         requestedAmount = _requestedAmount;
         repaymentsCount = _repaymentsCount;
         interest =  _interest;
@@ -141,6 +129,9 @@ contract Loan {
         returnAmount = requestedAmount.add(interest);
 
         loanCreationDate = block.timestamp;
+
+        // Loan can onlu start when sufficient funds are invested
+        active = false;
     }
 
     function getBalance() public view returns (uint256) {
@@ -213,7 +204,7 @@ contract Loan {
 
         if (repaidAmount == returnAmount) {
 
-            // TODO repayment finished event
+            emit LogBorrowerRepaymentFinished(msg.sender, block.timestamp);
 
             state = State.interestReturns;
 

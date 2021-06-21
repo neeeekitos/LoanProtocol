@@ -7,6 +7,8 @@ import Nav from 'react-bootstrap/Nav'
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form"
+import Schema from "orbit/packages/@orbit/data";
+
 import "./App.css";
 
 class App extends Component {
@@ -16,7 +18,15 @@ class App extends Component {
   componentDidMount = async () => {
     try {
       // Get network provider and web3 instance.
-      this.web3 = new Web3(window.web3.currentProvider);
+      // Is there is an injected web3 instance?
+      if (typeof web3 !== 'undefined') {
+        App.web3Provider = window.web3.currentProvider;
+        this.web3 = new Web3(window.web3.currentProvider);
+      } else {
+        // If no injected web3 instance is detected, fallback to Ganache.
+        App.web3Provider = new window.web3.providers.HttpProvider('http://127.0.0.1:9545');
+        this.web3 = new Web3(App.web3Provider);
+      }
       window.ethereum.enable();
 
       // Use web3 to get the user's accounts.
@@ -65,7 +75,13 @@ class App extends Component {
         this.state.repaymentsCount,
         2,
         this.web3.utils.asciiToHex(this.state.loanDescription))
-        .send({from: this.state.accounts[0], gas: 5000000});
+        .send({from: this.state.accounts[0], gas: 50000});
+  }
+
+  handleGetAllRequestLoans = async (event) => {
+    event.preventDefault();
+    this.setState({message:"Fetching all loan requests.."});
+    await this.state.contract.methods.users()
   }
 
   runExample = async () => {
