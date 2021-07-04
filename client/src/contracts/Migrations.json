@@ -1729,11 +1729,11 @@
       "events": {},
       "links": {},
       "address": "0xdF7B80739b337d56B5D4a43c5D1700d6de025Ce3",
-      "transactionHash": "0x0e3ce9e6a173c60d4d264a91abedc4c0891ed8e8e1a107a87ede9bacbe681e7b"
+      "transactionHash": "0x541619b0a6a42e65bb95297f666f9a0f14f92fb09aa25f1ecd09ce612f8a13e5"
     }
   },
-  "schemaVersion": "3.3.4",
-  "updatedAt": "2021-06-21T10:25:02.127Z",
+  "schemaVersion": "3.4.1",
+  "updatedAt": "2021-07-04T17:06:46.444Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

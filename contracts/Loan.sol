@@ -119,11 +119,11 @@ contract Loan {
         _;
     }
 
-    constructor (uint _requestedAmount, uint _repaymentsCount, uint _interest, bytes32 _loanDescription) public {
+    constructor (uint _requestedAmount, uint _repaymentsCount, uint _interest) public {
         requestedAmount = _requestedAmount;
         repaymentsCount = _repaymentsCount;
         interest =  _interest;
-        loanDescription = _loanDescription;
+        loanDescription = 0;
 
         // Calculate the amount to return by the borrower
         returnAmount = requestedAmount.add(interest);
