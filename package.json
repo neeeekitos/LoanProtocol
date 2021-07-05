@@ -19,5 +19,7 @@
     "react-bootstrap": "^1.6.0",
     "web3": "^1.4.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "csv-loader": "^3.0.3"
+  }
 }

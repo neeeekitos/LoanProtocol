@@ -10,6 +10,7 @@ import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import dbManagement from "./database";
+import Popup from "./CSVLoader";
 
 import loadRing from "./assets/ring.gif";
 
@@ -31,7 +32,8 @@ class App extends Component {
       loanDescription: '',
       pendingTransaction: false,
       loanRequestsList: '',
-      orbitDb: null
+      orbitDb: null,
+      showPopup: false
     };
 
     this.handleRequestedAmount = this.handleRequestedAmount.bind(this);
@@ -40,6 +42,7 @@ class App extends Component {
     this.handleBorrow = this.handleBorrow.bind(this);
     this.handleUpdateDatabase = this.handleUpdateDatabase.bind(this);
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
+    this.togglePopup = this.togglePopup.bind(this);
   }
 
   componentDidMount = async () => {
@@ -87,6 +90,12 @@ class App extends Component {
 
   handleLoanDescription(e) {
     this.setState({loanDescription: e.target.value});
+  }
+
+  togglePopup = () => {
+    this.setState({
+      showPopup: !this.state.showPopup
+    });
   }
 
   handleBorrow = async (event) => {
@@ -186,7 +195,7 @@ class App extends Component {
           'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
     });
 
-    const dataList = existingLoans.map((loan) => <li key={loan.index}>
+    const dataList = existingLoans.map((loan, index) => <li key={index}>
       <p>Description: {loan.payload.value.loanDescription}</p>
       <p>Amount: {loan.payload.value.requestedAmount}</p>
     </li>);
@@ -263,6 +272,14 @@ class App extends Component {
             { this.state.loanRequestsList }
           </ul>
         </Modal.Dialog>
+        <button onClick={this.togglePopup}>show popup</button>
+        {this.state.showPopup ?
+            <Popup
+                text='Active loan requests'
+                closePopup={this.togglePopup}
+            />
+            : null
+        }
       </div>
     );
   }
