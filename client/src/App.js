@@ -18,19 +18,29 @@ import "./App.css";
 
 class App extends Component {
 
+  constructor(props) {
+    super(props);
 
-  state = {
-    accounts: null,
-    web3: null,
-    contract: null,
-    balance: null,
-    requestedAmount: 0,
-    repaymentsCount: 0,
-    loanDescription: '',
-    pendingTransaction: false,
-    loanRequestsList: '',
-    orbitDb: null
-  };
+    this.state = {
+      accounts: null,
+      web3: null,
+      contract: null,
+      balance: null,
+      requestedAmount: 0,
+      repaymentsCount: 0,
+      loanDescription: '',
+      pendingTransaction: false,
+      loanRequestsList: '',
+      orbitDb: null
+    };
+
+    this.handleRequestedAmount = this.handleRequestedAmount.bind(this);
+    this.handleRepaymentsCount = this.handleRepaymentsCount.bind(this);
+    this.handleLoanDescription = this.handleLoanDescription.bind(this);
+    this.handleBorrow = this.handleBorrow.bind(this);
+    this.handleUpdateDatabase = this.handleUpdateDatabase.bind(this);
+    this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
+  }
 
   componentDidMount = async () => {
     try {
@@ -125,6 +135,10 @@ class App extends Component {
         // await this.handleUpdateDatabase();
   }
 
+  // componentDidUpdate = async () => {
+  //   this.setState({loanRequestsList: dataList});
+  // }
+
   GetAllRequestLoans = async () => {
     this.setState({message:"Fetching all loan requests.."});
 
@@ -171,6 +185,12 @@ class App extends Component {
           'Description: ' + loan.payload.value.loanDescription + '\n' +
           'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
     });
+
+    const dataList = existingLoans.map((loan) => <li key={loan.index}>
+      <p>Description: {loan.payload.value.loanDescription}</p>
+      <p>Amount: {loan.payload.value.requestedAmount}</p>
+    </li>);
+    this.setState({loanRequestsList: dataList});
   }
 
   createDatabase = async (event) => {
@@ -213,17 +233,17 @@ class App extends Component {
               <Form.Group controlId="formBasicText">
 
                 <Form.Label>Requested Amount in ETH</Form.Label>
-                <Form.Control type="number" value={this.state.requestedAmount} placeholder="1" onChange={this.handleRequestedAmount.bind(this)} />
+                <Form.Control type="number" value={this.state.requestedAmount} placeholder="1" onChange={this.handleRequestedAmount} />
 
                 <Form.Label>Repayments count estimation</Form.Label>
-                <Form.Control type="number" value={this.state.repaymentsCount} placeholder="2" onChange={this.handleRepaymentsCount.bind(this)} />
+                <Form.Control type="number" value={this.state.repaymentsCount} placeholder="2" onChange={this.handleRepaymentsCount} />
 
                 <Form.Label>Loan description</Form.Label>
                 <Form.Control
                     type="text"
                     value={this.state.loanDescription}
                     placeholder="Describe your purpose of loan"
-                    onChange={this.handleLoanDescription.bind(this)}/>
+                    onChange={this.handleLoanDescription}/>
               </Form.Group>
             </Form>
           </Modal.Body>
