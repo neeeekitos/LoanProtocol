@@ -28,7 +28,8 @@ class App extends Component {
     repaymentsCount: 0,
     loanDescription: '',
     pendingTransaction: false,
-    loanRequestsList: ''
+    loanRequestsList: '',
+    orbitDb: null
   };
 
   componentDidMount = async () => {
@@ -53,7 +54,6 @@ class App extends Component {
 
       console.log(instance);
       this.setState({ web3, accounts, contract: instance }, this.runExample);
-      // await this.GetAllRequestLoans();
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -61,6 +61,10 @@ class App extends Component {
       );
       console.error(error);
     }
+
+    const dbInstance = await dbManagement.createDb(); // database creation
+    this.setState({ orbitDb: dbInstance });
+    await this.GetAllRequestLoans();
   };
 
   handleRequestedAmount(e) {
@@ -123,14 +127,32 @@ class App extends Component {
 
   GetAllRequestLoans = async () => {
     this.setState({message:"Fetching all loan requests.."});
-    const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
+
+    //fetch from database
+    const existingLoans = await dbManagement.getLoanRequestsDb(this.state.orbitDb, this.state.accounts[0]);
+    console.log("Existing loans : ");
+    existingLoans.forEach((loan, index) => {
+      console.log("Loan "+ index +'\n' +
+          'Description: ' + loan.payload.value.loanDescription + '\n' +
+          'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
+    });
+
+
+    const dataList = existingLoans.map((loan) => <li key={loan.index}>
+      <p>Description: {loan.payload.value.loanDescription}</p>
+      <p>Amount: {loan.payload.value.requestedAmount}</p>
+    </li>);
+    this.setState({loanRequestsList: dataList});
+
+    // fetch from contract
+    /*const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
     console.log("hashes : " + loanHashes);
 
     // const reptiles = ["alligator", "snake", "lizard"];
     if (loanHashes !== null) {
       const dataList = loanHashes.map((hash) => <li key={hash}>{hash}</li>);
       this.setState({loanRequestsList: dataList});
-    }
+    }*/
   }
 
   handleUpdateDatabase = async (event) => {
@@ -141,7 +163,14 @@ class App extends Component {
       'repaymentsCount': this.state.repaymentsCount,
       'loanDescription': this.state.loanDescription
     };
-    await dbManagement.updateDb(this.state.accounts[0], loan);
+    await dbManagement.updateDb(this.state.orbitDb, this.state.accounts[0], loan);
+    const existingLoans = await dbManagement.getLoanRequestsDb(this.state.orbitDb, this.state.accounts[0]);
+    console.log("Existing loans : ");
+    existingLoans.forEach((loan, index) => {
+      console.log("Loan "+ index +'\n' +
+          'Description: ' + loan.payload.value.loanDescription + '\n' +
+          'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
+    });
   }
 
   createDatabase = async (event) => {

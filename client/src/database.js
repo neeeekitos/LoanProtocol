@@ -20,7 +20,7 @@ const dbManagement = {
         const options = {
             // Give write access to ourselves
             accessController: {
-                write: [orbitdb.identity.id]
+                write: "*"
             }
         }
 
@@ -28,35 +28,33 @@ const dbManagement = {
         const dbLoans = await orbitdb.feed('loan-requests', options)
         console.log(dbLoans.address.toString())
 
-
-        await dbLoans.put('name', 'hello')
-        await dbLoans.put('key1', 'hello1')
-        await dbLoans.put('key2', 'hello2')
-        await dbLoans.put('key3', 'hello3')
-        const value = dbLoans.get('name')
-        console.log(value);
-
-        // Creating an identity
+        return orbitdb;
+      /*  // Creating an identity
         const Identities = require('orbit-db-identity-provider')
         const optionsId = {id: 'local-id'}
         const identity = await Identities.createIdentity(optionsId)
-        await dbLoans.close()
+        await dbLoans.close()*/
     },
 
-    async updateDb(publicUserKey, requestLoan) {
-        const ipfsOptions = {repo: './ipfs',}
-        const ipfs = await IPFS.create(ipfsOptions)
-        const orbitdb = await OrbitDB.createInstance(ipfs)
+    async updateDb(orbitdb, publicUserKey, requestLoan) {
 
         const dbLoans = await orbitdb.feed('loan-requests')
-
         await dbLoans.load()
+
         const hash = await dbLoans.add(requestLoan)
         console.log("database updating...");
         const event = dbLoans.get(hash)
         console.log("get from database : " + JSON.stringify(event));
 
         await dbLoans.close()
+    },
+
+    async getLoanRequestsDb(orbitDb, publicUserKey) {
+
+        const dbLoans = await orbitDb.feed('loan-requests')
+        await dbLoans.load()
+
+        return dbLoans.all;
     }
 }
 
