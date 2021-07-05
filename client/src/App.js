@@ -17,6 +17,8 @@ import loadRing from "./assets/ring.gif";
 import "./App.css";
 
 class App extends Component {
+
+
   state = {
     accounts: null,
     web3: null,
@@ -25,7 +27,8 @@ class App extends Component {
     requestedAmount: 0,
     repaymentsCount: 0,
     loanDescription: '',
-    pendingTransaction: false
+    pendingTransaction: false,
+    loanRequestsList: ''
   };
 
   componentDidMount = async () => {
@@ -46,11 +49,11 @@ class App extends Component {
       );
       this.state.contract = instance;
 
-      const balance = await web3.utils.fromWei(await web3.eth.getBalance(accounts[0]), 'ether');
+      this.state.balance = await web3.utils.fromWei(await web3.eth.getBalance(accounts[0]), 'ether');
 
       console.log(instance);
       this.setState({ web3, accounts, contract: instance }, this.runExample);
-
+      // await this.GetAllRequestLoans();
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -118,10 +121,16 @@ class App extends Component {
         // await this.handleUpdateDatabase();
   }
 
-  handleGetAllRequestLoans = async (event) => {
-    event.preventDefault();
+  GetAllRequestLoans = async () => {
     this.setState({message:"Fetching all loan requests.."});
-    await this.state.contract.methods.users()
+    const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
+    console.log("hashes : " + loanHashes);
+
+    // const reptiles = ["alligator", "snake", "lizard"];
+    if (loanHashes !== null) {
+      const dataList = loanHashes.map((hash) => <li key={hash}>{hash}</li>);
+      this.setState({loanRequestsList: dataList});
+    }
   }
 
   handleUpdateDatabase = async (event) => {
@@ -197,8 +206,14 @@ class App extends Component {
           <img id="loader" src={loadRing} hidden={!this.state.pendingTransaction}/>
         </Modal.Dialog>
 
-
-
+        <Modal.Dialog>
+          <Modal.Header>
+            <Modal.Title>Active loan requests</Modal.Title>
+          </Modal.Header>
+          <ul>
+            { this.state.loanRequestsList }
+          </ul>
+        </Modal.Dialog>
       </div>
     );
   }

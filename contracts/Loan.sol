@@ -13,9 +13,7 @@ contract Loan {
     // Amount to be returned by the borrower (with an interest)
     uint repaymentsCount;
     // Loan interest
-    uint interest;
-    // Description of a loan
-    bytes32 loanDescription;
+    uint public interest;
     // The money is sent to the user only when the loan is started
     bool active;
     uint returnAmount;
@@ -24,7 +22,7 @@ contract Loan {
     uint remainingPayments;
     uint repaymentInstallment;
     uint repaidAmount;
-
+    uint constant loanExpirationInterval = 86400; // 1 DAY
 
     mapping(address => bool) public lenders;
 
@@ -34,7 +32,8 @@ contract Loan {
       *   investment - During this state only investments are allowed.
       *   repayment - During this stage only repayments are allowed.
       *   interestReturns - This stage gives investors opportunity to request their returns.
-      *   expired - This is the stage when the contract is finished its purpose.
+      *   expired - If the contract does not accumulate the necessary amount on the
+      *             balance over the time interval, it expires.
       *   fraud - The borrower was marked as fraud.
     */
     enum State { investment, repayment, interestReturns, expired, revoked, fraud }
@@ -69,6 +68,12 @@ contract Loan {
     */
     modifier isActive() {
         require(active == true);
+        _;
+    }
+
+    // crowdfunding process cannot exceed an interval of expiration
+    modifier notExpired() {
+        require(block.timestamp - loanCreationDate < loanExpirationInterval);
         _;
     }
 
@@ -119,59 +124,75 @@ contract Loan {
         _;
     }
 
-    constructor (uint _requestedAmount, uint _repaymentsCount, uint _interest) public {
+    constructor (address _borrower, uint _requestedAmount, uint _repaymentsCount, uint _interest) public {
+        borrower = _borrower;
         requestedAmount = _requestedAmount;
         repaymentsCount = _repaymentsCount;
         interest =  _interest;
-        loanDescription = 0;
 
         // Calculate the amount to return by the borrower
         returnAmount = requestedAmount.add(interest);
-
         loanCreationDate = block.timestamp;
 
         // Loan can onlu start when sufficient funds are invested
         active = false;
+
+        uint lastRepaymentDate = 0;
+        uint remainingPayments = _requestedAmount;
+        uint repaymentInstallment = remainingPayments.div(_repaymentsCount);
+        uint repaidAmount = 0;
     }
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
 
-    /** @dev Invest function.
-      * Provides functionality for person to invest in someone's credit,
-      * incentivised by the return of interest.
+    /** @dev Trustworthiness score calculation function
+      * Calculates trustworthiness score based on
+      * borrower's attributes
       */
-    function lend() public canInvest payable {
-
-        uint extraMoney = 0;
-
-        if (address(this).balance>= requestedAmount) {
-            extraMoney = address(this).balance.sub(requestedAmount);
-            assert(requestedAmount == address(this).balance.sub(extraMoney));
-
-            // Assert that there is no overflow / underflow
-            assert(extraMoney <= msg.value);
-
-            if (extraMoney > 0) {
-                // return extra money to the sender
-                payable(msg.sender).transfer(extraMoney);
-
-                // TODO event change returned
-            }
-
-            state = State.repayment;
-
-            // TODO event changed state
-
-        }
-
-        lenders[msg.sender] = true;
-        lendersInvestedAmount[msg.sender] = lendersInvestedAmount[msg.sender].add(msg.value.sub(extraMoney));
-
-        // TODO event invested amount
+    function requestTScore() public view returns (uint) {
+        // TODO place a magic formula here...
+        return 0;
     }
 
+    // TODO recheck this function
+    /** @dev Invest function.
+      * Provides functionality for person to invest in someone's project,
+      * incentivized by the return of interest.
+      */
+    // TODO add canInvest modifier
+    function lend() public  payable {
+
+        // uint extraMoney = 0;
+
+        // if (address(this).balance>= requestedAmount) {
+        //     extraMoney = address(this).balance.sub(requestedAmount);
+        //     assert(requestedAmount == address(this).balance.sub(extraMoney));
+
+        //     // Assert that there is no overflow / underflow
+        //     assert(extraMoney <= msg.value);
+
+        //     if (extraMoney > 0) {
+        //         // return extra money to the sender
+        //         payable(msg.sender).transfer(extraMoney);
+
+        //         // TODO event change returned
+        //     }
+
+        //     state = State.repayment;
+
+        //     // TODO event changed state
+
+        // }
+
+        // lenders[msg.sender] = true;
+        // lendersInvestedAmount[msg.sender] = lendersInvestedAmount[msg.sender].add(msg.value.sub(extraMoney));
+
+        // // TODO event invested amount
+    }
+
+    // TODO recheck this function
     /** @dev Repayment function.
      * Allows borrower to make repayment installments.
      */
@@ -212,6 +233,7 @@ contract Loan {
         }
     }
 
+    // TODO recheck and rewrite this function
     /** @dev Withdraw function.
       * It can only be executed while contract is in active state.
       * It is only accessible to the borrower.

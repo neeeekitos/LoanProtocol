@@ -17,3 +17,9 @@ code {
   height: 60px;
   margin: auto;
 }
+
+ul {
+  list-style-type: none; /* Remove bullets */
+  padding-top: 10px;
+  margin: 0; /* Remove margins */
+}

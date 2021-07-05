@@ -12,7 +12,7 @@ contract DynamicCollateralLending {
         bool fraudStatus;
         address activeLoan;
         address activeSupply;
-        byte32 orbitDbIndexHash;
+        address orbitDbIndexHash;
     }
 
     // Store all users with their address
@@ -29,25 +29,36 @@ contract DynamicCollateralLending {
     function applyForLoan(uint _requestedAmount, uint _repaymentsCount, uint _interest) public {
 
         // The user not fraudulent
-       /* require(users[msg.sender].fraudStatus == false);
+        /* require(users[msg.sender].fraudStatus == false);
 
-        // The user must not have any loan in progress
-        assert(users[msg.sender].activeLoan == address(0));*/
+         // The user must not have any loan in progress
+         assert(users[msg.sender].activeLoan == address(0));*/
 
-        Loan loan = new Loan(_requestedAmount, _repaymentsCount, _interest);
+        address loanAddr = address(new Loan(msg.sender, _requestedAmount, _repaymentsCount, _interest));
+        //        address loanAddr = address(0);
 
-        users[msg.sender].activeLoan = address(loan);
+        users[msg.sender].activeLoan = loanAddr;
+        users[msg.sender].orbitDbIndexHash = loanAddr;
+        userAddr.push(msg.sender);
+        addressRegistryCount++;
 
         emit LogLoanRequestedPosted(msg.sender, block.timestamp);
     }
 
-    function getHashesOfLoanRequests() public view returns (byte32[] memory){
+    function getHashesOfLoanRequests() public view returns (address[] memory){
         address[] memory ret = new address[](addressRegistryCount);
-        address index;
         for (uint i = 0; i < addressRegistryCount; i++) {
             ret[i] = users[userAddr[i]].orbitDbIndexHash;
         }
         return ret;
+    }
+
+    function invest(address loanContract) public payable {
+        Loan(loanContract).lend{value: msg.value}();
+    }
+
+    function getBalance() public view returns (uint256) {
+        return Loan(users[msg.sender].activeLoan).getBalance();
     }
 
     function test() public {
