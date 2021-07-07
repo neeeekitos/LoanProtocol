@@ -1,5 +1,4 @@
 import React, {Component,useState} from 'react';
-import App from "./App";
 import Papa from "papaparse";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
