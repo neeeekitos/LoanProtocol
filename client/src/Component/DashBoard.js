@@ -1,6 +1,6 @@
-import React, { useEffect, useState, Component } from "react";
-import { Modal, Button, Card } from "react-bootstrap"
-import getWeb3 from "./getWeb3";
+import React, { Component } from "react";
+import { Card, Modal } from "react-bootstrap";
+import Popup from "./CSVLoader";
 
 
 
@@ -13,31 +13,45 @@ class Dashboard extends Component {
         this.state = {
             accounts: null,
             web3: null,
+            contract: null,
             balance: null,
-           
+            orbitDb: null,
+            showPopup: false,
         };
+        this.togglePopup = this.togglePopup.bind(this);
+        this.handleBorrow = this.handleBorrow.bind(this)
     }
 
-
-    componentDidMount = async () => {
-
-            try {
-                // Get network provider and web3 instance.
-                const web3 = await getWeb3();
-                const accounts = await web3.eth.getAccounts();
-
-                this.state.balance = await web3.utils.fromWei(await web3.eth.getBalance(accounts[0]), 'ether');
-                this.setState({ web3, accounts});
-
-            }
-            catch (error) {
-                // Catch any errors for any of the above operations.
-                alert(
-                    `Failed to load web3, accounts, or contract. Check console for details.`,
-                );
-                console.error(error);
-            }
+    componentDidMount = () => {
+        this.setState({ web3: this.props.web3, accounts: this.props.accounts, contract: this.props.contract, balance: this.props.balance, orbitDb: this.props.orbitDb });
     };
+
+    togglePopup = () => {
+        this.setState({
+            showPopup: !this.state.showPopup
+        });
+    }
+
+    handleBorrow = async (event) => {
+        event.preventDefault();
+        console.log("Waiting on borrow transaction success...");
+        this.setState({ pendingTransaction: true });
+
+        await this.state.contract.methods.applyForLoan(
+            this.state.requestedAmount,
+            this.state.repaymentsCount,
+            2)
+            .send({ from: this.state.accounts[0], gas: 800000 },
+                (err, txHash) => this.setState({ isMining: true, txHash }));
+
+        // mining is finished, display the gas used for the transaction
+        await this.state.web3.eth.getTransactionReceipt(this.state.txHash,
+            (err, txReceipt) => {
+                console.log(txReceipt);
+                if (txReceipt.status) alert("Your loan request is created!!");
+                this.setState({ pendingTransaction: false });
+            });
+    }
 
     render() {
         if (!this.state.web3) {
@@ -70,7 +84,7 @@ class Dashboard extends Component {
                             <Card.Body>
                                 <blockquote className="blockquote mb-0">
                                     <p>
-                                       Your TScore
+                                        Your TScore
                                     </p>
 
                                 </blockquote>
@@ -81,7 +95,7 @@ class Dashboard extends Component {
                             <Card.Body>
                                 <blockquote className="blockquote mb-0">
                                     <p>
-                                       Logs from blockchain (events)
+                                        Logs from blockchain (events)
                                     </p>
 
                                 </blockquote>
@@ -92,7 +106,7 @@ class Dashboard extends Component {
                             <Card.Body>
                                 <blockquote className="blockquote mb-0">
                                     <p>
-                                       List of your current loan/ advancement
+                                        List of your current loan/ advancement
                                     </p>
 
                                 </blockquote>
@@ -104,6 +118,14 @@ class Dashboard extends Component {
 
                     </Modal.Footer>
                 </Modal.Dialog>
+                <button onClick={this.togglePopup}>show popup</button>
+                {this.state.showPopup ?
+                    <Popup
+                        text='Active loan requests'
+                        closePopup={this.togglePopup}
+                    />
+                    : null
+                }
             </>);
     }
 }

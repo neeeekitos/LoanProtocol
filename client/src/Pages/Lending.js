@@ -28,34 +28,9 @@ class Lending extends Component {
       showPopup: false
     };
 
-    this.handleRequestedAmount = this.handleRequestedAmount.bind(this);
-    this.handleRepaymentsCount = this.handleRepaymentsCount.bind(this);
-    this.handleLoanDescription = this.handleLoanDescription.bind(this);
-    this.handleUpdateDatabase = this.handleUpdateDatabase.bind(this);
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
-    this.togglePopup = this.togglePopup.bind(this);
+
   }
-
-
-  handleRequestedAmount(e) {
-    this.setState({ requestedAmount: e.target.value });
-  }
-
-  handleRepaymentsCount(e) {
-    this.setState({ repaymentsCount: e.target.value });
-  }
-
-  handleLoanDescription(e) {
-    this.setState({ loanDescription: e.target.value });
-  }
-
-  togglePopup = () => {
-    this.setState({
-      showPopup: !this.state.showPopup
-    });
-  }
-
-
 
 
   GetAllRequestLoans = async () => {
@@ -70,7 +45,6 @@ class Lending extends Component {
         'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
     });
 
-
     const dataList = existingLoans.map((loan) => <li key={loan.index}>
       <p>Description: {loan.payload.value.loanDescription}</p>
       <p>Amount: {loan.payload.value.requestedAmount}</p>
@@ -79,39 +53,10 @@ class Lending extends Component {
 
   }
 
-  handleUpdateDatabase = async (event) => {
-    event.preventDefault();
-    this.setState({ message: "Updating a database..." });
-    var loan = {
-      'requestedAmount': this.state.requestedAmount,
-      'repaymentsCount': this.state.repaymentsCount,
-      'loanDescription': this.state.loanDescription
-    };
-    await dbManagement.updateDb(this.state.orbitDb, this.state.accounts[0], loan);
-    const existingLoans = await dbManagement.getLoanRequestsDb(this.state.orbitDb, this.state.accounts[0]);
-    console.log("Existing loans : ");
-    existingLoans.forEach((loan, index) => {
-      console.log("Loan " + index + '\n' +
-        'Description: ' + loan.payload.value.loanDescription + '\n' +
-        'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
-    });
 
-    const dataList = existingLoans.map((loan, index) => <li key={index}>
-      <p>Description: {loan.payload.value.loanDescription}</p>
-      <p>Amount: {loan.payload.value.requestedAmount}</p>
-    </li>);
-    this.setState({ loanRequestsList: dataList });
-  }
 
-  createDatabase = async (event) => {
-    this.setState({ message: "Updating a database..." });
-    await dbManagement.createDb();
-  }
 
-  runExample = async () => {
-    console.log(this.state.accounts[0]);
-    console.log(this.state.balance + 'ETH');
-  };
+
 
   render() {
 
