@@ -1,7 +1,9 @@
-import React, {Component,useState} from 'react';
+import React, {Component} from 'react';
 import Papa from "papaparse";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
+import { ethers } from 'ethers';
+import SimpleStorageContract from "../contracts/DynamicCollateralLending.json";
 
 class Popup extends Component {
 
@@ -9,10 +11,13 @@ class Popup extends Component {
         super(props);
 
         this.state = {
+            mnemonic: process.env.YOUR_MNEMONIC, //your memonic;
+            wallet: null,
             closePopup: this.props.closePopup,
             selectedFile: null,
             isFilePicked: false
         }
+        this.uploadOnChain = this.uploadOnChain.bind(this)
     }
 
     changeHandler = (event) => {
@@ -20,14 +25,64 @@ class Popup extends Component {
         this.setState({isFilePicked : true});
     };
 
-    handleSubmission = () => {
+    uploadOnChain = (data) => {
+        console.log("Uploading on the blockchain");
+
+        let provider = ethers.getDefaultProvider();
+        //const provider = new ethers.providers.WebSocketProvider(process.env.SOCKET_PROVIDER);
+
+        let contractAddress = this.props.contract.options.address;
+        let contract = new ethers.Contract(contractAddress, SimpleStorageContract.abi, provider);
+
+        let overrides;
+        let tx;
+        let loanContract;
+        let loanContracts;
+
+        data.forEach(async function callback(row, index) {
+            let wallet = new ethers.Wallet(row.mnemonic);
+            let contractWithSigner = contract.connect(wallet);
+
+            switch (row.typeOfTx) {
+                case "Borrow":
+                    tx = await contractWithSigner.applyForLoan(
+                        row.requestedAmount,
+                        row.repaymentsCount,
+                        2);
+                    console.log(tx);
+                    loanContracts.push({loanAddr: tx.logs[0].args.loanAddr, projectId: row.projectId});
+                    break;
+                case "Lend":
+                    overrides = {
+                        value: ethers.utils.parseEther(row.value) // ether in this case MUST be a string
+                    };
+
+                    loanContract = loanContracts.find(x => x.projectId === row.projectId);
+                    if (loanContract !== 'undefined')
+                        tx = await contractWithSigner.invest(loanContract.loanAddr, overrides);
+                    break;
+                case "Recommend":
+                    overrides = {
+                        value: ethers.utils.parseEther(row.value) // ether in this case MUST be a string
+                    };
+
+                    loanContract = loanContracts.find(x => x.projectId === row.projectId);
+                    if (loanContract !== 'undefined')
+                        tx = await contractWithSigner.recommend(loanContract.loanAddr, overrides);
+                    break;
+            }
+            console.log(tx.hash);
+        });
+    }
+
+    handleSubmission = async () => {
         console.log(this.state.selectedFile);
         Papa.parse(this.state.selectedFile, {
             header: true,
             dynamicTyping: true,
             complete: function(results) {
                 console.log(results);
-                return results.data;
+                this.uploadOnChain(results.data);
             }
         });
     };

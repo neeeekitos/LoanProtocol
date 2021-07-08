@@ -3,9 +3,6 @@ import { Card, Modal } from "react-bootstrap";
 import Popup from "./CSVLoader";
 
 
-
-
-
 class Dashboard extends Component {
     constructor(props) {
         super(props);
@@ -123,6 +120,7 @@ class Dashboard extends Component {
                     <Popup
                         text='Active loan requests'
                         closePopup={this.togglePopup}
+                        contract = {this.state.contract}
                     />
                     : null
                 }
