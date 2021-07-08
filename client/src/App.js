@@ -68,7 +68,7 @@ class App extends Component {
 
     return (
 
-      <div style={{ display: "flex", flexDirection: "row" }}>
+      <div style={{ display: "flex", flexDirection: "row", width: '100vw' }}>
         <div style={{ flex: 8 }}>
           <MainPage accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
         </div>
