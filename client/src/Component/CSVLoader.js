@@ -17,7 +17,6 @@ class Popup extends Component {
             selectedFile: null,
             isFilePicked: false
         }
-        this.uploadOnChain = this.uploadOnChain.bind(this)
     }
 
     changeHandler = (event) => {
@@ -37,7 +36,8 @@ class Popup extends Component {
         let overrides;
         let tx;
         let loanContract;
-        let loanContracts;
+        let loanContracts = this.loanContracts || [];
+
 
         data.forEach(async function callback(row, index) {
             let wallet = new ethers.Wallet(row.mnemonic);
@@ -51,10 +51,11 @@ class Popup extends Component {
                         2);
                     console.log(tx);
                     loanContracts.push({loanAddr: tx.logs[0].args.loanAddr, projectId: row.projectId});
+
                     break;
                 case "Lend":
                     overrides = {
-                        value: ethers.utils.parseEther(row.value) // ether in this case MUST be a string
+                        value: ethers.utils.parseEther(row.value.toString()) // ether in this case MUST be a string
                     };
 
                     loanContract = loanContracts.find(x => x.projectId === row.projectId);
@@ -63,7 +64,7 @@ class Popup extends Component {
                     break;
                 case "Recommend":
                     overrides = {
-                        value: ethers.utils.parseEther(row.value) // ether in this case MUST be a string
+                        value: ethers.utils.parseEther(row.value.toString()) // ether in this case MUST be a string
                     };
 
                     loanContract = loanContracts.find(x => x.projectId === row.projectId);
@@ -76,13 +77,14 @@ class Popup extends Component {
     }
 
     handleSubmission = async () => {
+        let data = this;
         console.log(this.state.selectedFile);
         Papa.parse(this.state.selectedFile, {
             header: true,
             dynamicTyping: true,
             complete: function(results) {
                 console.log(results);
-                this.uploadOnChain(results.data);
+                data.uploadOnChain(results.data);
             }
         });
     };

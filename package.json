@@ -17,7 +17,8 @@
     "bignumber": "^1.1.0",
     "bootstrap": "^5.0.1",
     "react-bootstrap": "^1.6.0",
-    "web3": "^1.4.0"
+    "web3": "^1.4.0",
+    "@truffle/hdwallet-provider": ">1.0.4"
   },
   "devDependencies": {
     "csv-loader": "^3.0.3"

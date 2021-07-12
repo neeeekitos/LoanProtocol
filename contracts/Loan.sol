@@ -2,31 +2,54 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "./Exponential.sol";
 
-contract Loan {
+contract Loan is Exponential {
 
     using SafeMath for uint;
 
+    /** Parameters to define
+     */
+
+    // Time interval of expiration (in seconds) : 1 day = 86400s
+    uint constant loanExpirationInterval = 86400;
+
+    /** Part of the interest rate for the investors
+     * the remaining part is for the recommenders
+     * (interest for recommenders = 100000000000000000000 - interestPartInvestor)
+     *
+     * if we wanted to store the 34.7, mantissa would store 34.7e18.
+     * To have more info check Exponential.sol contract
+     */
+    Exp interestPartInvestor = Exp({mantissa: 34700000000000000000});
+
+    // Loan interest
+    Exp interest = Exp({mantissa: 6700000000000000000}); // 6,7%
+
     address borrower;
+
     // Requested amount for a loan
     uint requestedAmount;
+
     // Amount to be returned by the borrower (with an interest)
     uint repaymentsCount;
-    // Loan interest
-    uint public interest;
+
     // The money is sent to the user only when the loan is started
     bool active;
+
     uint returnAmount;
     uint loanCreationDate;
     uint lastRepaymentDate;
     uint remainingPayments;
     uint repaymentInstallment;
     uint repaidAmount;
-    uint constant loanExpirationInterval = 86400; // 1 DAY
+    uint collateralFactor;
 
     mapping(address => bool) public lenders;
+    mapping(address => bool) public recommenders;
 
-    mapping(address => uint) lendersInvestedAmount;
+
+    mapping(address => uint) investedAmountByAddress;
 
     /** Stages that every credit contract gets trough.
       *   investment - During this state only investments are allowed.
@@ -89,7 +112,7 @@ contract Loan {
 
     modifier canAskForInterest() {
         require(state == State.interestReturns);
-        require(lendersInvestedAmount[msg.sender] > 0);
+        require(investedAmountByAddress[msg.sender] > 0);
         _;
     }
 
@@ -128,10 +151,10 @@ contract Loan {
         borrower = _borrower;
         requestedAmount = _requestedAmount;
         repaymentsCount = _repaymentsCount;
-        interest =  _interest;
 
         // Calculate the amount to return by the borrower
-        returnAmount = requestedAmount.add(interest);
+        returnAmount = mul_ScalarTruncateAddUInt(interest, _requestedAmount, _requestedAmount);
+
         loanCreationDate = block.timestamp;
 
         // Loan can onlu start when sufficient funds are invested
@@ -187,7 +210,43 @@ contract Loan {
         // }
 
         // lenders[msg.sender] = true;
-        // lendersInvestedAmount[msg.sender] = lendersInvestedAmount[msg.sender].add(msg.value.sub(extraMoney));
+        // investedAmountByAddress[msg.sender] = investedAmountByAddress[msg.sender].add(msg.value.sub(extraMoney));
+
+        // // TODO event invested amount
+    }
+
+    // TODO recheck this function
+    /** @dev Invest function.
+      * Provides functionality for person to invest in someone's project,
+      * incentivized by the return of interest.
+      */
+    // TODO add canInvest modifier
+    function recommend() public  payable {
+
+        // uint extraMoney = 0;
+
+        // if (address(this).balance>= requestedAmount) {
+        //     extraMoney = address(this).balance.sub(requestedAmount);
+        //     assert(requestedAmount == address(this).balance.sub(extraMoney));
+
+        //     // Assert that there is no overflow / underflow
+        //     assert(extraMoney <= msg.value);
+
+        //     if (extraMoney > 0) {
+        //         // return extra money to the sender
+        //         payable(msg.sender).transfer(extraMoney);
+
+        //         // TODO event change returned
+        //     }
+
+        //     state = State.repayment;
+
+        //     // TODO event changed state
+
+        // }
+
+        // lenders[msg.sender] = true;
+        // investedAmountByAddress[msg.sender] = investedAmountByAddress[msg.sender].add(msg.value.sub(extraMoney));
 
         // // TODO event invested amount
     }
@@ -255,6 +314,23 @@ contract Loan {
         payable(borrower).transfer(address(this).balance);
     }
 
+    /** @dev Interest calculation function for Investors and Recommenders
+     * It can be executed even if the loan is not active yet, in
+     * this case it will give an approximative APY.
+     */
+    function getInterestRate() public view returns (Exp memory, Exp memory) {
+
+        Exp memory investorInterest;
+        Exp memory recommenderInterest;
+        MathError mathErr;
+
+        (mathErr, investorInterest) = mulExp(interestPartInvestor, interest);
+        investorInterest = div_(investorInterest, 100);
+        (mathErr, recommenderInterest) = subExp(interest, investorInterest);
+
+        return (investorInterest, recommenderInterest);
+    }
+
     /** @dev Request interest function.
       * It can only be executed while contract is in active state.
       * It is only accessible to lenders.
@@ -265,7 +341,7 @@ contract Loan {
     function requestInterest() public isActive onlyLender canAskForInterest {
 
         // Calculate the amount to be returned to lender.
-        //        uint lenderReturnAmount = lendersInvestedAmount[msg.sender].mul(returnAmount.div(lendersCount).div(lendersInvestedAmount[msg.sender]));
+        //        uint lenderReturnAmount = investedAmountByAddress[msg.sender].mul(returnAmount.div(lendersCount).div(investedAmountByAddress[msg.sender]));
         uint lenderReturnAmount = returnAmount / lendersCount;
 
         // Assert the contract has enough balance to pay the lender.
@@ -292,5 +368,17 @@ contract Loan {
             // Log state change.
             emit LogCreditStateChanged(state, block.timestamp);
         }
+    }
+
+    /** @dev Change state function.
+      * @param _state New state.
+      * Only accessible to the owner of the contract.
+      * Changes the state of the contract.
+      */
+    function changeState(State _state) external onlyBorrower {
+        state = _state;
+
+        // Log state change.
+        // LogCreditStateChanged(state, block.timestamp);
     }
 }
