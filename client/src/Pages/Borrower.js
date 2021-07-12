@@ -68,7 +68,7 @@ class Borrower extends Component {
       this.state.requestedAmount,
       this.state.repaymentsCount,
       2)
-      .send({ from: this.state.accounts[0], gas: 800000 },
+      .send({ from: this.state.accounts[0], gas: 3000000 },
         (err, txHash) => this.setState({ isMining: true, txHash }));
 
     // mining is finished, display the gas used for the transaction
