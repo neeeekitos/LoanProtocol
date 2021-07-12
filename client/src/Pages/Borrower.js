@@ -23,7 +23,6 @@ class Borrower extends Component {
       loanDescription: '',
       pendingTransaction: false,
       loanRequestsList: '',
-      orbitDb: null,
       message: "",
       isMining: false,
       txHash: null,
@@ -77,7 +76,7 @@ class Borrower extends Component {
       this.state.requestedAmount,
       this.state.repaymentsCount,
       2)
-      .send({ from: this.state.accounts[0], gas: 3000000 },
+      .send({ from: this.props.accounts[0], gas: 3000000 },
         (err, txHash) => this.setState({ isMining: true, txHash }));
 
     // mining is finished, display the gas used for the transaction
