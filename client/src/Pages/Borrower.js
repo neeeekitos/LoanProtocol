@@ -1,6 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { Component } from "react";
-import { Button, Form, Modal, Nav, Navbar } from "react-bootstrap";
+import { Button, Form, Modal, Nav, Navbar, Card, ListGroup, ListGroupItem } from "react-bootstrap";
 
 import loadRing from "./../assets/ring.gif";
 import './Borrower.css';
@@ -24,9 +24,10 @@ class Borrower extends Component {
       pendingTransaction: false,
       loanRequestsList: '',
       orbitDb: null,
-      message : "",
+      message: "",
       isMining: false,
-      txHash : null,
+      txHash: null,
+      repayAmount: 0,
 
 
     };
@@ -36,15 +37,20 @@ class Borrower extends Component {
     this.handleLoanDescription = this.handleLoanDescription.bind(this);
     this.handleUpdateDatabase = this.handleUpdateDatabase.bind(this);
     this.handleBorrow = this.handleBorrow.bind(this);
+    this.handlePayCollateral = this.handlePayCollateral.bind(this);
+    this.handleRepay = this.handleRepay.bind(this)
+    this.handleWithdraw = this.handleWithdraw.bind(this)
+
   }
 
   componentDidMount = () => {
-    const { web3,accounts,contract,balance,orbitDb} = this.props
-    this.setState({ web3 , accounts, contract, balance, orbitDb });
+    const { web3, accounts, contract, balance, orbitDb } = this.props
+    this.setState({ web3, accounts, contract, balance, orbitDb });
 
-    console.log("props contract",this.state.contract);
-    console.log("props accounts",this.state.accounts);
+    console.log("props contract", this.state.contract);
+    console.log("props accounts", this.state.accounts);
   };
+
 
   handleRequestedAmount(e) {
     this.setState({ requestedAmount: e.target.value });
@@ -56,6 +62,9 @@ class Borrower extends Component {
 
   handleLoanDescription(e) {
     this.setState({ loanDescription: e.target.value });
+  }
+  handleRepaydAmount(e) {
+    this.setState({ repayAmount: e.target.value });
   }
 
 
@@ -81,7 +90,7 @@ class Borrower extends Component {
   }
   handleUpdateDatabase = async (event) => {
     event.preventDefault();
-    this.setState({message:"Updating a database..."});
+    this.setState({ message: "Updating a database..." });
     var loan = {
       'requestedAmount': this.state.requestedAmount,
       'repaymentsCount': this.state.repaymentsCount,
@@ -91,17 +100,31 @@ class Borrower extends Component {
     const existingLoans = await dbManagement.getLoanRequestsDb(this.props.orbitDb, this.props.accounts[0]);
     console.log("Existing loans : ");
     existingLoans.forEach((loan, index) => {
-      console.log("Loan "+ index +'\n' +
-          'Description: ' + loan.payload.value.loanDescription + '\n' +
-          'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
+      console.log("Loan " + index + '\n' +
+        'Description: ' + loan.payload.value.loanDescription + '\n' +
+        'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
     });
+
 
     const dataList = existingLoans.map((loan, index) => <li key={index}>
       <p>Description: {loan.payload.value.loanDescription}</p>
       <p>Amount: {loan.payload.value.requestedAmount}</p>
     </li>);
-    this.setState({loanRequestsList: dataList});
+    this.setState({ loanRequestsList: dataList });
   }
+
+  handlePayCollateral = async () => {
+
+    return
+  };
+  handleRepay = async () => {
+
+    return
+  };
+  handleWithdraw = async () => {
+
+    return
+  };
 
 
   render() {
@@ -145,26 +168,45 @@ class Borrower extends Component {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="Supply">Supply</Button>
           <Button onClick={this.handleBorrow} variant="Borrow">Borrow</Button>
           <Button onClick={this.handleUpdateDatabase} variant="Update">Update database</Button>
+          <Button onClick={this.handlePayCollateral} variant="Collateral">Pay Collateral</Button>
         </Modal.Footer>
         <img id="loader" src={loadRing} hidden={!this.state.pendingTransaction} />
       </Modal.Dialog>
 
       <Modal.Dialog>
         <Modal.Header>
-          <Modal.Title>Active loan requests</Modal.Title>
+          <Modal.Title>Your loan request</Modal.Title>
         </Modal.Header>
-        <ul>
-          {this.state.loanRequestsList}
-        </ul>
+        <Card >
+          <Card.Body>
+            <Card.Title>Amount asked : </Card.Title>
+          </Card.Body>
+          <ListGroup className="list-group-flush">
+            <ListGroupItem>Nombre de participant a votre loan : </ListGroupItem>
+            <ListGroupItem>Collateral payed : </ListGroupItem>
+            <ListGroupItem>Interest : </ListGroupItem>
+            <ListGroupItem>Repay Count : </ListGroupItem>
+          </ListGroup>
+        </Card>
+        <Modal.Footer>
+          <Form>
+            <Form.Group controlId="formBasicText">
+
+              <Form.Label>How much do you want to repay</Form.Label>
+              <Form.Control type="number" value={this.state.repayAmount} placeholder="1" onChange={this.handleRepaydAmount} />
+            </Form.Group>
+          </Form>
+
+          <Button onClick={this.handleWithdraw} variant="Withdraw">Withdraw</Button>
+        </Modal.Footer>
       </Modal.Dialog>
-      
 
 
 
-    </div>)
+
+    </div >)
   }
 
 
