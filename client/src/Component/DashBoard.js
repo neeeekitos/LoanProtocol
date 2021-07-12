@@ -60,33 +60,13 @@ class Dashboard extends Component {
 
                 <Modal.Dialog>
                     <Modal.Header >
-                        <Modal.Title>Your personal dashboard</Modal.Title>
+                        <Modal.Title>Dashboard of the project</Modal.Title>
                     </Modal.Header>
 
                     <Modal.Body>
 
-                        <Card>
-                            <Card.Header>Accout address</Card.Header>
-                            <Card.Body>
-                                <blockquote className="blockquote mb-0">
-                                    <p>
-                                        ${this.state.accounts[0]}
-                                    </p>
-
-                                </blockquote>
-                            </Card.Body>
-                        </Card>
-                        <Card>
-                            <Card.Header>TScore</Card.Header>
-                            <Card.Body>
-                                <blockquote className="blockquote mb-0">
-                                    <p>
-                                        Your TScore
-                                    </p>
-
-                                </blockquote>
-                            </Card.Body>
-                        </Card>
+                        
+                       
                         <Card>
                             <Card.Header>Logs</Card.Header>
                             <Card.Body>

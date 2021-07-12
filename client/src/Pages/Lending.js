@@ -4,6 +4,7 @@ import { Button, Card, Nav, Navbar } from "react-bootstrap";
 import dbManagement from "../Component/database";
 import './Borrower.css';
 import "../index.css"
+import LendingPopup from "../Component/LendingPopup";
 
 
 
@@ -25,18 +26,32 @@ class Lending extends Component {
       loanRequestsList: [1, 1, 1, 1, 1],
       orbitDb: null,
       showPopup: false,
+      lendingAmount: 0,
 
     };
 
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
     this.PresentRequestLoans = this.PresentRequestLoans.bind(this);
-
+    this.handdleLend= this.handdleLend.bind(this)
+    this.handlepopUp=this.handlepopUp.bind(this)
+    this.closePopup=this.closePopup.bind(this)
   }
   componentDidMount = () => {
 
     this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
 
   };
+  closePopup=()=>{
+    this.setState({
+      showPopup: !this.state.showPopup
+  });
+  }
+  handlepopUp=(value)=>{
+    console.log("value on popup",value);
+    this.setState({
+      showPopup: !this.state.showPopup
+  });
+  }
 
 
 
@@ -58,15 +73,16 @@ class Lending extends Component {
     </li>);
     this.setState({ loanRequestsList: dataList });
   }
+  handdleLend = () => {
+    this.setState({
+        showPopup: !this.state.showPopup
+    });
+  }
 
   PresentRequestLoans = () => {
-    let flexpos
     return (
       this.state.loanRequestsList.map((item, index) =>
-
-
         <div key={index} style={{padding:10}}  >
-
           <div class="grow shadow p-3 mb-5 bg-white rounded">
           <Card style={{ width: '18rem',borderStyle:"none", cursor:"pointer" }} key={index} >
             <Card.Body>
@@ -74,7 +90,7 @@ class Lending extends Component {
               <Card.Text>
                 Description of the project
               </Card.Text>
-              <Button variant="primary">Lend</Button>
+              <Button  onClick={this.handdleLend } variant="primary">Lend monney</Button>
             </Card.Body>
           </Card>
         </div>
@@ -108,6 +124,13 @@ class Lending extends Component {
 
           <div  style={{display:"flex", flexWrap:"wrap" ,justifyContent:"left"}}>
           {this.PresentRequestLoans()}
+          {this.state.showPopup ?
+                    <LendingPopup
+                    handlepopUp={this.handlepopUp}
+                    closePopup={this.closePopup}
+                    />
+                    : null
+                }
           </div>
           
 
