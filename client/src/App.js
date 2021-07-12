@@ -25,6 +25,7 @@ class App extends Component {
   componentDidMount = async () => {
     try {
       // Get network provider and web3 instance.
+      console.log("RENDING");
       const web3 = await getWeb3();
 
       // Use web3 to get the user's accounts.
@@ -61,26 +62,31 @@ class App extends Component {
 
 
   render() {
+    console.log("coucou");
 
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
     }
+    else{
+      return (
 
-    return (
-
-      <div style={{ display: "flex", flexDirection: "row", width: '100vw' }}>
-        <div style={{ flex: 8 }}>
-          <MainPage accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
+        <div style={{ display: "flex", flexDirection: "row", width: '100vw' }}>
+          <div style={{ flex: 8 }}>
+            <MainPage accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
+          </div>
+          <div style={{ flex: 4 }}>
+            <Dashboard accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
+          </div>
+          {console.log(this.state.contract)}
         </div>
-        <div style={{ flex: 4 }}>
-          <Dashboard accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
-        </div>
-        {console.log(this.state.contract)}
-      </div>
-      
+        
+  
+  
+      );
 
+    }
 
-    );
+   
   }
 }
 
