@@ -17,7 +17,7 @@ class Lending extends Component {
     this.state = {
       accounts: null,
       web3: null,
-      contract: null,
+      contract: this.props.contract,
       balance: null,
       requestedAmount: 0,
       repaymentsCount: 0,
@@ -36,10 +36,9 @@ class Lending extends Component {
     this.handlepopUp=this.handlepopUp.bind(this)
     this.closePopup=this.closePopup.bind(this)
   }
-  componentDidMount = () => {
-
-    this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
-
+  componentDidMount = async () => {
+    await this.GetAllRequestLoans();
+    //this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
   };
   closePopup=()=>{
     this.setState({
@@ -55,12 +54,11 @@ class Lending extends Component {
 
 
 
-
   GetAllRequestLoans = async () => {
     this.setState({ message: "Fetching all loan requests.." });
 
     //fetch from database
-    const existingLoans = await dbManagement.getLoanRequestsDb(this.state.orbitDb, this.state.accounts[0]);
+    /*const existingLoans = await dbManagement.getLoanRequestsDb(this.state.orbitDb, this.state.accounts[0]);
     console.log("Existing loans : ");
     existingLoans.forEach((loan, index) => {
       console.log("Loan " + index + '\n' +
@@ -71,7 +69,18 @@ class Lending extends Component {
       <p>Description: {loan.payload.value.loanDescription}</p>
       <p>Amount: {loan.payload.value.requestedAmount}</p>
     </li>);
-    this.setState({ loanRequestsList: dataList });
+*/
+    // fetch from contract
+    const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
+    console.log("hashes : " + loanHashes);
+
+    // const reptiles = ["alligator", "snake", "lizard"];
+    if (loanHashes !== null) {
+      const dataList = loanHashes.map((hash) => <li key={hash}>{hash}</li>);
+      this.setState({loanRequestsList: dataList});
+    }
+    console.log(this.state.loanRequestsList);
+    //this.setState({ loanRequestsList: dataList });
   }
   handdleLend = () => {
     this.setState({
@@ -90,7 +99,7 @@ class Lending extends Component {
               <Card.Text>
                 Description of the project
               </Card.Text>
-              <Button  onClick={this.handdleLend } variant="primary">Lend monney</Button>
+              <Button  onClick={this.handdleLend} variant="primary">Lend monney</Button>
             </Card.Body>
           </Card>
         </div>
