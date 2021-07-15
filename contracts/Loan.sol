@@ -9,7 +9,7 @@ contract Loan {
 
     address borrower;
     // Requested amount for a loan
-    uint requestedAmount;
+    uint public requestedAmount;
     // Amount to be returned by the borrower (with an interest)
     uint repaymentsCount;
     // Loan interest
@@ -145,6 +145,10 @@ contract Loan {
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    function getProjectInfos() public view returns (uint256, uint256) {
+        return (interest, requestedAmount);
     }
 
     /** @dev Trustworthiness score calculation function

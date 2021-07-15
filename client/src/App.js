@@ -4,7 +4,7 @@ import "./App.css";
 import Dashboard from "./Component/DashBoard";
 import dbManagement from "./Component/database";
 import getWeb3 from "./Component/getWeb3";
-import SimpleStorageContract from "./contracts/DynamicCollateralLending.json";
+import DynamicCollateralLending from "./contracts/DynamicCollateralLending.json";
 import MainPage from "./Pages/MaisPage";
 
 
@@ -33,14 +33,15 @@ class App extends Component {
 
       // Get the contract instance.
       const networkId = await web3.eth.net.getId();
-      console.log(SimpleStorageContract.networks);
-      const deployedNetwork = SimpleStorageContract.networks[networkId];
+      console.log(DynamicCollateralLending.networks);
+      const deployedNetwork = DynamicCollateralLending.networks[networkId];
       console.log("deployedNetwork",deployedNetwork);
 
       const instance = new web3.eth.Contract(
-        SimpleStorageContract.abi,
+        DynamicCollateralLending.abi,
         deployedNetwork && deployedNetwork.address,
       );
+
       this.state.contract = instance;
 
       this.state.balance = await web3.utils.fromWei(await web3.eth.getBalance(accounts[0]), 'ether');

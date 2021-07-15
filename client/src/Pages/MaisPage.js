@@ -30,7 +30,12 @@ class MainPage extends Component {
     }
 
     componentDidMount = () => {
-        this.setState({ web3: this.props.web3, accounts: this.props.accounts, contract: this.props.contract, balance: this.props.balance, orbitDb: this.props.orbitDb });
+        this.setState({
+            web3: this.props.web3,
+            accounts: this.props.accounts,
+            contract: this.props.contract,
+            balance: this.props.balance,
+            orbitDb: this.props.orbitDb });
     };
 
 
@@ -46,7 +51,20 @@ class MainPage extends Component {
                 <Button variant="Lending" onClick={() => { this.setState({ lending: true, borrowing: false, recommender: false }) }}>Lending</Button>
                 <Button variant="Recommender" onClick={() => { this.setState({ lending: false, borrowing: false, recommender: true }) }}>Recommender</Button>
 
-                {this.state.borrowing ? (<Borrower accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract}/>) : this.state.lending ? (<Lending account={this.state.accounts[0]} balance={this.state.balance} contract={this.state.contract}/>) : this.state.recommender ? (<Recomender  account={this.state.accounts[0]} balance={this.state.balance}/>) : null}
+                {this.state.borrowing ?
+                    (<Borrower accounts={this.state.accounts}
+                               web3={this.state.web3}
+                               balance={this.state.balance}
+                               orbitDb={this.state.orbitDb}
+                               contract={this.state.contract}/>) :
+                    this.state.lending ?
+                        (<Lending account={this.state.accounts[0]}
+                                  balance={this.state.balance}
+                                  web3={this.state.web3}
+                                  contract={this.state.contract}/>) :
+                        this.state.recommender ?
+                            (<Recomender  account={this.state.accounts[0]}
+                                          balance={this.state.balance}/>) : null}
 
             </div>
         );

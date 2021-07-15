@@ -3,7 +3,8 @@ import React, { Component } from "react";
 import { Button, Card, Nav, Navbar } from "react-bootstrap";
 import dbManagement from "../Component/database";
 import './Borrower.css';
-import "../index.css"
+import "../index.css";
+import LoanContract from "../contracts/Loan.json";
 import LendingPopup from "../Component/LendingPopup";
 
 
@@ -16,18 +17,17 @@ class Lending extends Component {
 
     this.state = {
       accounts: null,
-      web3: null,
+      web3: this.props.web3,
       contract: this.props.contract,
       balance: null,
       requestedAmount: 0,
       repaymentsCount: 0,
       loanDescription: '',
       pendingTransaction: false,
-      loanRequestsList: [1, 1, 1, 1, 1],
-      orbitDb: null,
+      loanRequestsList: [],
+      orbitDb: this.props.orbitDb,
       showPopup: false,
       lendingAmount: 0,
-
     };
 
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
@@ -36,7 +36,7 @@ class Lending extends Component {
     this.handlepopUp=this.handlepopUp.bind(this)
     this.closePopup=this.closePopup.bind(this)
   }
-  componentDidMount = async () => {
+  componentWillMount = async () => {
     await this.GetAllRequestLoans();
     //this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
   };
@@ -74,11 +74,26 @@ class Lending extends Component {
     const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
     console.log("hashes : " + loanHashes);
 
-    // const reptiles = ["alligator", "snake", "lizard"];
-    if (loanHashes !== null) {
-      const dataList = loanHashes.map((hash) => <li key={hash}>{hash}</li>);
-      this.setState({loanRequestsList: dataList});
-    }
+    loanHashes.map((hash) => {
+      let contract;
+      contract = new this.state.web3.eth.Contract(LoanContract.abi, hash);
+
+      contract.methods.getProjectInfos().call().then(result => {
+        console.log('result' + JSON.stringify(result));
+
+        const loanInfos = {
+          address: contract._address,
+          interest: result[0],
+          requestedAmount: result[1]
+        };
+        const dataListLoans = this.state.loanRequestsList.slice();
+        dataListLoans.push(loanInfos);
+        this.setState({loanRequestsList: dataListLoans});
+        console.log(dataListLoans);
+      });
+
+    });
+
     console.log(this.state.loanRequestsList);
     //this.setState({ loanRequestsList: dataList });
   }
@@ -90,16 +105,26 @@ class Lending extends Component {
 
   PresentRequestLoans = () => {
     return (
-      this.state.loanRequestsList.map((item, index) =>
+      this.state.loanRequestsList.map((loanInfo, index) =>
         <div key={index} style={{padding:10}}  >
           <div class="grow shadow p-3 mb-5 bg-white rounded">
           <Card style={{ width: '18rem',borderStyle:"none", cursor:"pointer" }} key={index} >
             <Card.Body>
               <Card.Title>Name project</Card.Title>
               <Card.Text>
-                Description of the project
+                <p style={{margin:"20px"}}>
+                  Description of the project
+                </p>
+                <p>
+                  Requested amount : {loanInfo.requestedAmount} ETH
+                </p>
+                <p>
+                  {loanInfo.interest}% APY
+                </p>
+
+                <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
               </Card.Text>
-              <Button  onClick={this.handdleLend} variant="primary">Lend monney</Button>
+              <Button  onClick={this.handdleLend} variant="primary">💰Lend money💰</Button>
             </Card.Body>
           </Card>
         </div>
@@ -131,7 +156,7 @@ class Lending extends Component {
           </Navbar.Collapse>
         </Navbar>
 
-          <div  style={{display:"flex", flexWrap:"wrap" ,justifyContent:"left"}}>
+          <div style={{display:"flex", flexWrap:"wrap", justifyContent:"flex-start", width:"43rem", margin:"auto"}}>
           {this.PresentRequestLoans()}
           {this.state.showPopup ?
                     <LendingPopup
