@@ -40,5 +40,11 @@ ul {
   width: 90%;
 }
 
+.modal-content, .card-rounded {
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 0 15px rgba(0,0,0, 0.5);
+}
+
 .grow { transition: all .2s ease-in-out; }
 .grow:hover { transform: scale(1.1); }

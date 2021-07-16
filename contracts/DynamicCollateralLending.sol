@@ -57,6 +57,14 @@ contract DynamicCollateralLending {
         return ret;
     }
 
+    function hasBorrow() public view returns (bool) {
+        return users[msg.sender].activeLoan != address(0);
+    }
+
+    function getBorrowerInfos() public view returns (uint256, uint256, uint256, uint256, uint256) {
+        return Loan(users[msg.sender].activeLoan).getInfosForBorrower();
+    }
+
     function invest(address loanContract) public payable {
        Loan(loanContract).lend{value: msg.value}();
     }

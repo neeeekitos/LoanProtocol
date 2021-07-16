@@ -52,8 +52,6 @@ class Lending extends Component {
   });
   }
 
-
-
   GetAllRequestLoans = async () => {
     this.setState({ message: "Fetching all loan requests.." });
 
@@ -107,7 +105,7 @@ class Lending extends Component {
     return (
       this.state.loanRequestsList.map((loanInfo, index) =>
         <div key={index} style={{padding:10}}  >
-          <div class="grow shadow p-3 mb-5 bg-white rounded">
+          <div class="card-rounded grow shadow p-3 mb-5 bg-white">
           <Card style={{ width: '18rem',borderStyle:"none", cursor:"pointer" }} key={index} >
             <Card.Body>
               <Card.Title>Name project</Card.Title>
@@ -141,22 +139,8 @@ class Lending extends Component {
     const five = [1, 1, 1, 1, 1];
 
     return (
-      <div className="App" >
-        <Navbar bg="light" variant="light">
-          <Navbar.Brand href="#home">Dynamic Collateral Lending Platform</Navbar.Brand>
-
-          <Nav className="mr-auto">
-            <Nav.Link href="#home"> Singed in as: {this.props.account}</Nav.Link>
-          </Nav>
-
-          <Navbar.Collapse className="justify-content-end">
-            <Navbar.Text>
-              Balance: {this.props.balance} ETH
-            </Navbar.Text>
-          </Navbar.Collapse>
-        </Navbar>
-
-          <div style={{display:"flex", flexWrap:"wrap", justifyContent:"flex-start", width:"43rem", margin:"auto"}}>
+      <div>
+          <div style={{display:"flex", flexWrap:"wrap", justifyContent:"flex-start", width:"64rem", margin:"auto"}}>
           {this.PresentRequestLoans()}
           {this.state.showPopup ?
                     <LendingPopup

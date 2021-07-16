@@ -5,6 +5,7 @@ import dbManagement from "../Component/database";
 import './Borrower.css';
 import "../index.css"
 import RecommenderPopup from "../Component/RecommenderPopup";
+import LoanContract from "../contracts/Loan.json";
 
 
 
@@ -15,42 +16,35 @@ class Recommender extends Component {
 
     this.state = {
       accounts: null,
-      web3: null,
-      contract: null,
+      web3: this.props.web3,
+      contract: this.props.contract,
       balance: null,
       requestedAmount: 0,
       repaymentsCount: 0,
       loanDescription: '',
       pendingTransaction: false,
-      loanRequestsList: [1, 1, 1, 1, 1],
-      orbitDb: null,
+      loanRequestsList: [],
+      orbitDb: this.props.orbitDb,
       showPopup: false,
       recommendAmount : 0,
-      
-
     };
 
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
     this.PresentRequestLoans = this.PresentRequestLoans.bind(this);
-    this.handlepopUp=this.handlepopUp.bind(this)
-    this.closePopup=this.closePopup.bind(this)
-    this.handdleRecommend=this.handdleRecommend.bind(this)
-
+    this.handlepopUp=this.handlepopUp.bind(this);
+    this.closePopup=this.closePopup.bind(this);
+    this.handleRecommend=this.handleRecommend.bind(this);
   }
-  componentDidMount = () => {
-
-    this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
-
+  componentWillMount = async () => {
+    await this.GetAllRequestLoans();
+    // this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
   };
-
-
-
 
   GetAllRequestLoans = async () => {
     this.setState({ message: "Fetching all loan requests.." });
 
     //fetch from database
-    const existingLoans = await dbManagement.getLoanRequestsDb(this.state.orbitDb, this.state.accounts[0]);
+    /*const existingLoans = await dbManagement.getLoanRequestsDb(this.state.orbitDb, this.state.accounts[0]);
     console.log("Existing loans : ");
     existingLoans.forEach((loan, index) => {
       console.log("Loan " + index + '\n' +
@@ -61,13 +55,41 @@ class Recommender extends Component {
       <p>Description: {loan.payload.value.loanDescription}</p>
       <p>Amount: {loan.payload.value.requestedAmount}</p>
     </li>);
-    this.setState({ loanRequestsList: dataList });
+*/
+    // fetch from contract
+    const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
+    console.log("hashes : " + loanHashes);
+
+    loanHashes.map((hash) => {
+      let contract;
+      contract = new this.state.web3.eth.Contract(LoanContract.abi, hash);
+
+      contract.methods.getProjectInfos().call().then(result => {
+        console.log('result' + JSON.stringify(result));
+
+        const loanInfos = {
+          address: contract._address,
+          interest: result[0],
+          requestedAmount: result[1]
+        };
+        const dataListLoans = this.state.loanRequestsList.slice();
+        dataListLoans.push(loanInfos);
+        this.setState({loanRequestsList: dataListLoans});
+        console.log(dataListLoans);
+      });
+
+    });
+
+    console.log(this.state.loanRequestsList);
+    //this.setState({ loanRequestsList: dataList });
   }
-  closePopup=()=>{
+
+  closePopup=()=> {
     this.setState({
       showPopup: !this.state.showPopup
-  });
+    });
   }
+
   handlepopUp=(value)=>{
     console.log("value on popup",value);
     this.setState({
@@ -76,7 +98,7 @@ class Recommender extends Component {
   }
 
   
-  handdleRecommend = () => {
+  handleRecommend = () => {
     this.setState({
         showPopup: !this.state.showPopup
     });
@@ -84,22 +106,31 @@ class Recommender extends Component {
 
   PresentRequestLoans = () => {
     return (
-      this.state.loanRequestsList.map((item, index) =>
-        <div key={index} style={{ padding: 10 }}  >
-          <div class="grow shadow p-3 mb-5 bg-white rounded">
-            <Card style={{ width: '18rem', borderStyle: "none", cursor: "pointer" }} key={index} >
-              <Card.Body>
-                <Card.Title>Name project</Card.Title>
-                <Card.Text>
-                  Description of the project
-                </Card.Text>
-                <Button  onClick={this.handdleRecommend } variant="primary">Recommend</Button>
-              
-              </Card.Body>
-            </Card>
-          </div>
-        </div>
-      ))
+        this.state.loanRequestsList.map((loanInfo, index) =>
+            <div key={index} style={{padding:10}}  >
+              <div class="card-rounded grow shadow p-3 mb-5 bg-white">
+                <Card style={{ width: '18rem',borderStyle:"none", cursor:"pointer" }} key={index} >
+                  <Card.Body>
+                    <Card.Title>Name project</Card.Title>
+                    <Card.Text>
+                      <p style={{margin:"20px"}}>
+                        Description of the project
+                      </p>
+                      <p>
+                        Requested amount : {loanInfo.requestedAmount} ETH
+                      </p>
+                      <p>
+                        {loanInfo.interest}% APY
+                      </p>
+
+                      <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
+                    </Card.Text>
+                    <Button onClick={this.handleRecommend} variant="primary">💰Recommend💰</Button>
+                  </Card.Body>
+                </Card>
+              </div>
+            </div>
+        ))
   }
 
 
@@ -111,22 +142,8 @@ class Recommender extends Component {
     const five = [1, 1, 1, 1, 1];
 
     return (
-      <div className="App" >
-        <Navbar bg="light" variant="light">
-          <Navbar.Brand href="#home">Dynamic Collateral Recommender Platform</Navbar.Brand>
-
-          <Nav className="mr-auto">
-            <Nav.Link href="#home"> Singed in as: {this.props.account}</Nav.Link>
-          </Nav>
-
-          <Navbar.Collapse className="justify-content-end">
-            <Navbar.Text>
-              Balance: {this.props.balance} ETH
-            </Navbar.Text>
-          </Navbar.Collapse>
-        </Navbar>
-
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "left" }}>
+      <div className="App">
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "left",  width:"64rem", margin:"auto"}}>
           {this.PresentRequestLoans()}
           {this.state.showPopup ?
                     <RecommenderPopup

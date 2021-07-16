@@ -24,6 +24,8 @@ contract Loan {
     uint repaymentInstallment;
     uint repaidAmount;
     uint constant loanExpirationInterval = 86400; // 1 DAY
+    uint investorsAndRecommendersNumber;
+    uint collateral;
 
     mapping(address => bool) public lenders;
 
@@ -138,6 +140,8 @@ contract Loan {
         // Loan can onlu start when sufficient funds are invested
 
         uint lastRepaymentDate = 0;
+        collateral = 2;
+        investorsAndRecommendersNumber = 0;
         uint remainingPayments = _requestedAmount;
         /*uint repaymentInstallment = remainingPayments.div(_repaymentsCount);*/
         uint repaidAmount = 0;
@@ -149,6 +153,10 @@ contract Loan {
 
     function getProjectInfos() public view returns (uint256, uint256) {
         return (interest, requestedAmount);
+    }
+
+    function getInfosForBorrower() public view returns (uint256, uint256, uint256, uint256, uint256) {
+        return (requestedAmount, interest, repaymentsCount, investorsAndRecommendersNumber, collateral);
     }
 
     /** @dev Trustworthiness score calculation function
@@ -189,7 +197,7 @@ contract Loan {
         //     // TODO event changed state
 
         // }
-
+        investorsAndRecommendersNumber++;
         // lenders[msg.sender] = true;
         // lendersInvestedAmount[msg.sender] = lendersInvestedAmount[msg.sender].add(msg.value.sub(extraMoney));
 

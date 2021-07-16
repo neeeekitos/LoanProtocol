@@ -27,8 +27,8 @@ class Borrower extends Component {
       isMining: false,
       txHash: null,
       repayAmount: 0,
-
-
+      hasBorrow: false,
+      borrowerInfos: {}
     };
 
     this.handleRequestedAmount = this.handleRequestedAmount.bind(this);
@@ -37,9 +37,28 @@ class Borrower extends Component {
     this.handleUpdateDatabase = this.handleUpdateDatabase.bind(this);
     this.handleBorrow = this.handleBorrow.bind(this);
     this.handlePayCollateral = this.handlePayCollateral.bind(this);
-    this.handleRepay = this.handleRepay.bind(this)
-    this.handleWithdraw = this.handleWithdraw.bind(this)
+    this.handleRepay = this.handleRepay.bind(this);
+    this.handleWithdraw = this.handleWithdraw.bind(this);
+    this.PresentBorrowerLoan = this.PresentBorrowerLoan.bind(this);
 
+
+    this.state.contract.methods.hasBorrow().call().then(result => {
+      if (result[0]) {
+        this.state.contract.methods.getBorrowerInfos().call().then(result => {
+          console.log('result' + JSON.stringify(result));
+
+          this.state.borrowerInfos = {
+            requestedAmount: result[0],
+            interest: result[1],
+            repaymentsCount: result[2],
+            investorsAndRecommendersNumber: result[3],
+            collateral: result[4]
+          }
+        });
+      } else {
+        console.log('No active loan in progress');
+      }
+    });
   }
 
   componentDidMount = () => {
@@ -125,23 +144,44 @@ class Borrower extends Component {
     return
   };
 
+  PresentBorrowerLoan = () => {
+    if (this.state.hasBorrow)
+      return (
+          <div>
+            <Modal.Dialog>
+              <Modal.Header>
+                <Modal.Title>Your loan request</Modal.Title>
+              </Modal.Header>
+              <Card >
+                <Card.Body>
+                  <Card.Title>Requested amount : </Card.Title>
+                </Card.Body>
+                <ListGroup className="list-group-flush">
+                  <ListGroupItem>Investors / Recommenders : </ListGroupItem>
+                  <ListGroupItem>Collateral : </ListGroupItem>
+                  <ListGroupItem>Interest : </ListGroupItem>
+                  <ListGroupItem>Repayment Count : </ListGroupItem>
+                </ListGroup>
+              </Card>
+              <Modal.Footer>
+                <Form>
+                  <Form.Group controlId="formBasicText">
+
+                    <Form.Label>How much do you want to repay</Form.Label>
+                    <Form.Control type="number" value={this.state.repayAmount} placeholder="1" onChange={this.handleRepaydAmount} />
+                  </Form.Group>
+                </Form>
+
+                <Button onClick={this.handleWithdraw} variant="Withdraw">Withdraw</Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </div>
+      )
+  }
+
 
   render() {
     return (<div className="App">
-      <Navbar bg="light" variant="light">
-        <Navbar.Brand href="#home">Dynamic Collateral Borrowing Platform</Navbar.Brand>
-
-        <Nav className="mr-auto">
-          <Nav.Link href="#home"> Singed in as: {this.props.account}</Nav.Link>
-        </Nav>
-
-        <Navbar.Collapse className="justify-content-end">
-          <Navbar.Text>
-            Balance: {this.props.balance} ETH
-          </Navbar.Text>
-        </Navbar.Collapse>
-      </Navbar>
-
       <Modal.Dialog>
         <Modal.Header closeButton>
           <Modal.Title>Apply for a loan</Modal.Title>
@@ -174,36 +214,7 @@ class Borrower extends Component {
         <img id="loader" src={loadRing} hidden={!this.state.pendingTransaction} />
       </Modal.Dialog>
 
-      <Modal.Dialog>
-        <Modal.Header>
-          <Modal.Title>Your loan request</Modal.Title>
-        </Modal.Header>
-        <Card >
-          <Card.Body>
-            <Card.Title>Amount asked : </Card.Title>
-          </Card.Body>
-          <ListGroup className="list-group-flush">
-            <ListGroupItem>Nombre de participant a votre loan : </ListGroupItem>
-            <ListGroupItem>Collateral payed : </ListGroupItem>
-            <ListGroupItem>Interest : </ListGroupItem>
-            <ListGroupItem>Repay Count : </ListGroupItem>
-          </ListGroup>
-        </Card>
-        <Modal.Footer>
-          <Form>
-            <Form.Group controlId="formBasicText">
-
-              <Form.Label>How much do you want to repay</Form.Label>
-              <Form.Control type="number" value={this.state.repayAmount} placeholder="1" onChange={this.handleRepaydAmount} />
-            </Form.Group>
-          </Form>
-
-          <Button onClick={this.handleWithdraw} variant="Withdraw">Withdraw</Button>
-        </Modal.Footer>
-      </Modal.Dialog>
-
-
-
+      {this.PresentBorrowerLoan()}
 
     </div >)
   }

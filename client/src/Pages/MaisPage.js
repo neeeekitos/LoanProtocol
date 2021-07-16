@@ -1,6 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { Component } from "react";
-import { Button } from "react-bootstrap";
+import {Button, Navbar} from "react-bootstrap";
 import Borrower from './Borrower';
 import './Borrower.css';
 import Lending from './Lending';
@@ -47,9 +47,11 @@ class MainPage extends Component {
         }
         return (
             <div>
-                <Button variant="Borrowing" onClick={() => { this.setState({ lending: false, borrowing: true, recommender: false }) }}  >Borrowing</Button>
-                <Button variant="Lending" onClick={() => { this.setState({ lending: true, borrowing: false, recommender: false }) }}>Lending</Button>
-                <Button variant="Recommender" onClick={() => { this.setState({ lending: false, borrowing: false, recommender: true }) }}>Recommender</Button>
+                <div style={{ padding:"10px", margin:"auto", maxWidth: "400px", borderRadius: "20px" }}>
+                    <Button class="btn-primary" variant="Borrowing" onClick={() => { this.setState({ lending: false, borrowing: true, recommender: false }) }}  >Borrowing</Button>
+                    <Button class="btn-primary" variant="Lending" onClick={() => { this.setState({ lending: true, borrowing: false, recommender: false }) }}>Lending</Button>
+                    <Button class="btn-primary" variant="Recommender" onClick={() => { this.setState({ lending: false, borrowing: false, recommender: true }) }}>Recommender</Button>
+                </div>
 
                 {this.state.borrowing ?
                     (<Borrower accounts={this.state.accounts}
@@ -64,7 +66,9 @@ class MainPage extends Component {
                                   contract={this.state.contract}/>) :
                         this.state.recommender ?
                             (<Recomender  account={this.state.accounts[0]}
-                                          balance={this.state.balance}/>) : null}
+                                          balance={this.state.balance}
+                                          web3={this.state.web3}
+                                          contract={this.state.contract}/>) : null}
 
             </div>
         );
