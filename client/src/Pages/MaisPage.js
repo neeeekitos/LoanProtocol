@@ -48,9 +48,9 @@ class MainPage extends Component {
         return (
             <div>
                 <div style={{ padding:"10px", margin:"auto", maxWidth: "400px", borderRadius: "20px" }}>
-                    <Button class="btn-primary" variant="Borrowing" onClick={() => { this.setState({ lending: false, borrowing: true, recommender: false }) }}  >Borrowing</Button>
-                    <Button class="btn-primary" variant="Lending" onClick={() => { this.setState({ lending: true, borrowing: false, recommender: false }) }}>Lending</Button>
-                    <Button class="btn-primary" variant="Recommender" onClick={() => { this.setState({ lending: false, borrowing: false, recommender: true }) }}>Recommender</Button>
+                    <Button class="btn-primary" variant="Borrowing" onClick={() => { this.setState({ lending: false, borrowing: true, recommender: false }) }}  >Borrow</Button>
+                    <Button class="btn-primary" variant="Lending" onClick={() => { this.setState({ lending: true, borrowing: false, recommender: false }) }}>Lend</Button>
+                    <Button class="btn-primary" variant="Recommender" onClick={() => { this.setState({ lending: false, borrowing: false, recommender: true }) }}>Recommend</Button>
                 </div>
 
                 {this.state.borrowing ?

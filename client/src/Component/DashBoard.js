@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Card, Modal } from "react-bootstrap";
+import { Button, Card, Modal } from "react-bootstrap";
 import Popup from "./CSVLoader";
 
 
@@ -95,7 +95,7 @@ class Dashboard extends Component {
 
                     </Modal.Footer>
                 </Modal.Dialog>
-                <button onClick={this.togglePopup}>show popup</button>
+                <Button onClick={this.togglePopup} variant="dark">show popup</Button>
                 {this.state.showPopup ?
                     <Popup
                         text='Active loan requests'

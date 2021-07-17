@@ -24,7 +24,7 @@ contract DynamicCollateralLending {
     /** @dev Events
     *
     */
-    event LogLoanRequestedPosted(address indexed _address, uint indexed timestamp);
+    event LogLoanRequestedPosted(address indexed _address, uint indexed timestamp, address indexed _loanAddress);
 
     function applyForLoan(uint _requestedAmount, uint _repaymentsCount, uint _interest) public {
 
@@ -46,7 +46,7 @@ contract DynamicCollateralLending {
         userAddr.push(msg.sender);
         addressRegistryCount++;
 
-        emit LogLoanRequestedPosted(msg.sender, block.timestamp);
+        emit LogLoanRequestedPosted(msg.sender, block.timestamp, loanAddr);
     }
 
     function getHashesOfLoanRequests() public view returns (address[] memory){
@@ -67,6 +67,10 @@ contract DynamicCollateralLending {
 
     function invest(address loanContract) public payable {
        Loan(loanContract).lend{value: msg.value}();
+    }
+
+    function recommend(address loanContract) public payable {
+       Loan(loanContract).recommend{value: msg.value}();
     }
 
     function getBalance() public view returns (uint256) {

@@ -168,7 +168,14 @@ contract Loan {
         return 0;
     }
 
-    // TODO recheck this function
+    /** @dev Recommend function.
+      * Provides functionality for person to recommend someone's project,
+      * incentivized by the return of interest.
+      */
+    function recommend() public  payable {
+    }
+
+        // TODO recheck this function
     /** @dev Invest function.
       * Provides functionality for person to invest in someone's project,
       * incentivized by the return of interest.

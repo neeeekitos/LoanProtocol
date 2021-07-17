@@ -40,25 +40,9 @@ class Borrower extends Component {
     this.handleRepay = this.handleRepay.bind(this);
     this.handleWithdraw = this.handleWithdraw.bind(this);
     this.PresentBorrowerLoan = this.PresentBorrowerLoan.bind(this);
+    this.handleActiveLoanFound = this.handleActiveLoanFound.bind(this);
 
-
-    this.state.contract.methods.hasBorrow().call().then(result => {
-      if (result[0]) {
-        this.state.contract.methods.getBorrowerInfos().call().then(result => {
-          console.log('result' + JSON.stringify(result));
-
-          this.state.borrowerInfos = {
-            requestedAmount: result[0],
-            interest: result[1],
-            repaymentsCount: result[2],
-            investorsAndRecommendersNumber: result[3],
-            collateral: result[4]
-          }
-        });
-      } else {
-        console.log('No active loan in progress');
-      }
-    });
+    this.handleActiveLoanFound();
   }
 
   componentDidMount = () => {
@@ -68,6 +52,28 @@ class Borrower extends Component {
     console.log("props contract", this.state.contract);
     console.log("props accounts", this.state.accounts);
   };
+
+  handleActiveLoanFound = () => {
+    this.state.contract.methods.hasBorrow().call({ from: this.props.accounts[0]}).then(result => {
+      if (result) {
+        this.setState({hasBorrow: true});
+        this.state.contract.methods.getBorrowerInfos().call({ from: this.props.accounts[0]}).then(result => {
+          console.log('result' + JSON.stringify(result));
+
+          this.setState({borrowerInfos: {
+              requestedAmount: result[0],
+              interest: result[1],
+              repaymentsCount: result[2],
+              investorsAndRecommendersNumber: result[3],
+              collateral: result[4]
+            }});
+        });
+        console.log('Active loan found');
+      } else {
+        console.log('No active loan in progress');
+      }
+    });
+  }
 
 
   handleRequestedAmount(e) {
@@ -102,7 +108,12 @@ class Borrower extends Component {
     await this.props.web3.eth.getTransactionReceipt(this.state.txHash,
       (err, txReceipt) => {
         console.log(txReceipt);
-        if (txReceipt.status) alert("Your loan request is created!!");
+        if (txReceipt.status) {
+          alert("Your loan request is created!!");
+          this.handleActiveLoanFound();
+
+          this.setState({requestedAmount: "", repaymentsCount: "", loanDescription: "" });
+        }
         this.setState({ pendingTransaction: false });
       });
   }
@@ -154,25 +165,24 @@ class Borrower extends Component {
               </Modal.Header>
               <Card >
                 <Card.Body>
-                  <Card.Title>Requested amount : </Card.Title>
+                  <Card.Title>Requested amount : {this.state.borrowerInfos.requestedAmount} ETH</Card.Title>
+                  <ListGroup className="list-group-flush">
+                    <ListGroupItem>Investors / Recommenders : {this.state.borrowerInfos.investorsAndRecommendersNumber}</ListGroupItem>
+                    <ListGroupItem>Collateral : {this.state.borrowerInfos.collateral} ETH</ListGroupItem>
+                    <ListGroupItem>Interest : {this.state.borrowerInfos.interest} %</ListGroupItem>
+                    <ListGroupItem>Repayment Count : {this.state.borrowerInfos.repaymentsCount} times</ListGroupItem>
+                  </ListGroup>
                 </Card.Body>
-                <ListGroup className="list-group-flush">
-                  <ListGroupItem>Investors / Recommenders : </ListGroupItem>
-                  <ListGroupItem>Collateral : </ListGroupItem>
-                  <ListGroupItem>Interest : </ListGroupItem>
-                  <ListGroupItem>Repayment Count : </ListGroupItem>
-                </ListGroup>
               </Card>
-              <Modal.Footer>
+              <Modal.Footer style={{display:"flex", flexDirection:"column"}}>
                 <Form>
                   <Form.Group controlId="formBasicText">
-
                     <Form.Label>How much do you want to repay</Form.Label>
                     <Form.Control type="number" value={this.state.repayAmount} placeholder="1" onChange={this.handleRepaydAmount} />
                   </Form.Group>
                 </Form>
-
-                <Button onClick={this.handleWithdraw} variant="Withdraw">Withdraw</Button>
+                <Button onClick={this.handlePayCollateral} variant="primary">Pay Collateral</Button>
+                <Button onClick={this.handleWithdraw} variant="light">Withdraw</Button>
               </Modal.Footer>
             </Modal.Dialog>
           </div>
@@ -181,9 +191,10 @@ class Borrower extends Component {
 
 
   render() {
-    return (<div className="App">
+    return (
+        <div className="App">
       <Modal.Dialog>
-        <Modal.Header closeButton>
+        <Modal.Header>
           <Modal.Title>Apply for a loan</Modal.Title>
         </Modal.Header>
 
@@ -206,10 +217,9 @@ class Borrower extends Component {
             </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer>
-          <Button onClick={this.handleBorrow} variant="Borrow">Borrow</Button>
-          <Button onClick={this.handleUpdateDatabase} variant="Update">Update database</Button>
-          <Button onClick={this.handlePayCollateral} variant="Collateral">Pay Collateral</Button>
+        <Modal.Footer style={{display:"flex", flexDirection:"column"}}>
+          <Button onClick={this.handleBorrow} variant="primary">Borrow</Button>
+          <Button onClick={this.handleUpdateDatabase} variant="dark">Update database</Button>
         </Modal.Footer>
         <img id="loader" src={loadRing} hidden={!this.state.pendingTransaction} />
       </Modal.Dialog>

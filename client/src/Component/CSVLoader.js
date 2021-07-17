@@ -24,10 +24,13 @@ class Popup extends Component {
         this.setState({isFilePicked : true});
     };
 
-    uploadOnChain = (data) => {
+    uploadOnChain = async (data) => {
         console.log("Uploading on the blockchain");
 
-        let provider = ethers.getDefaultProvider();
+        // let provider = ethers.getDefaultProvider('http://localhost:9545');
+        //const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const provider = new ethers.providers.JsonRpcProvider("http://localhost:9545");
+
         //const provider = new ethers.providers.WebSocketProvider(process.env.SOCKET_PROVIDER);
 
         let contractAddress = this.props.contract.options.address;
@@ -39,8 +42,10 @@ class Popup extends Component {
         let loanContracts = this.loanContracts || [];
 
 
-        data.forEach(async function callback(row, index) {
-            let wallet = new ethers.Wallet(row.mnemonic);
+        // data.forEach(async function callback(row, index) {
+        for (const row of data) {
+
+            let wallet = new ethers.Wallet(row.mnemonic, provider);
             let contractWithSigner = contract.connect(wallet);
 
             switch (row.typeOfTx) {
@@ -49,8 +54,10 @@ class Popup extends Component {
                         row.requestedAmount,
                         row.repaymentsCount,
                         2);
-                    console.log(tx);
-                    loanContracts.push({loanAddr: tx.logs[0].args.loanAddr, projectId: row.projectId});
+                    const receipt = await tx.wait();
+
+                    console.log(receipt);
+                    loanContracts.push({loanAddr: receipt.events[0].args[2], projectId: row.projectId});
 
                     break;
                 case "Lend":
@@ -59,7 +66,7 @@ class Popup extends Component {
                     };
 
                     loanContract = loanContracts.find(x => x.projectId === row.projectId);
-                    if (loanContract !== 'undefined')
+                    if (typeof loanContract !== 'undefined')
                         tx = await contractWithSigner.invest(loanContract.loanAddr, overrides);
                     break;
                 case "Recommend":
@@ -68,12 +75,14 @@ class Popup extends Component {
                     };
 
                     loanContract = loanContracts.find(x => x.projectId === row.projectId);
-                    if (loanContract !== 'undefined')
+                    if (typeof loanContract !== 'undefined')
                         tx = await contractWithSigner.recommend(loanContract.loanAddr, overrides);
                     break;
             }
             console.log(tx.hash);
-        });
+        }
+        alert('All transaction have been imported!')
+        this.props.closePopup();
     }
 
     handleSubmission = async () => {
