@@ -7,6 +7,7 @@ import getWeb3 from "./Component/getWeb3";
 import DynamicCollateralLending from "./contracts/DynamicCollateralLending.json";
 import MainPage from "./Pages/MaisPage";
 import {Nav, Navbar} from "react-bootstrap";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 class App extends Component {
@@ -20,7 +21,10 @@ class App extends Component {
       balance: null,
       orbitDb: null,
       contract: null,
+      txLogs: []
     };
+    this.addTxLog = this.addTxLog.bind(this);
+
   }
 
   componentDidMount = async () => {
@@ -62,6 +66,14 @@ class App extends Component {
 
   };
 
+  addTxLog = (tx) => {
+    const txLogs = this.state.txLogs.slice();
+    txLogs.push(tx);
+    this.setState({txLogs: txLogs}, () => {
+      console.log(this.state.txLogs);
+    });
+  }
+
 
   render() {
     console.log("coucou");
@@ -87,10 +99,11 @@ class App extends Component {
             </Navbar>
             <div style={{ display: "flex", flexDirection: "row", width: '100vw', background: "radial-gradient(50% 50% at 50% 50%,#fc077d10 0,rgba(255,255,255,0) 100%)", minHeight: "100vh"}}>
               <div style={{ flex: 8 }}>
-                <MainPage accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
+                <MainPage
+                    nts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
               </div>
               <div style={{ flex: 4 }}>
-                <Dashboard accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
+                <Dashboard txLogs={this.state.txLogs} accounts={this.state.accounts} web3={this.state.web3} balance={this.state.balance} orbitDb={this.state.orbitDb} contract={this.state.contract} />
               </div>
               {console.log(this.state.contract)}
             </div>

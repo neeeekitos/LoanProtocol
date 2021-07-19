@@ -14,6 +14,8 @@ class Dashboard extends Component {
             balance: null,
             orbitDb: null,
             showPopup: false,
+            transactions: null,
+            txLogs: this.props.txLogs
         };
         this.togglePopup = this.togglePopup.bind(this);
         this.handleBorrow = this.handleBorrow.bind(this)
@@ -74,11 +76,11 @@ class Dashboard extends Component {
                                     <p>
                                         Logs from blockchain (events)
                                     </p>
-
+                                    {this.state.txLogs}
                                 </blockquote>
                             </Card.Body>
                         </Card>
-                        <Card>
+                 {/*       <Card>
                             <Card.Header>Current Loan</Card.Header>
                             <Card.Body>
                                 <blockquote className="blockquote mb-0">
@@ -88,7 +90,7 @@ class Dashboard extends Component {
 
                                 </blockquote>
                             </Card.Body>
-                        </Card>
+                        </Card>*/}
 
                     </Modal.Body>
                     <Modal.Footer>

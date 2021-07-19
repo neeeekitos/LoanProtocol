@@ -16,7 +16,7 @@ class Lending extends Component {
     super(props);
 
     this.state = {
-      accounts: null,
+      accounts: this.props.accounts,
       web3: this.props.web3,
       contract: this.props.contract,
       balance: null,
@@ -28,12 +28,13 @@ class Lending extends Component {
       orbitDb: this.props.orbitDb,
       showPopup: false,
       lendingAmount: 0,
+      loanToLend: ""
     };
 
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
     this.PresentRequestLoans = this.PresentRequestLoans.bind(this);
-    this.handdleLend= this.handdleLend.bind(this)
-    this.handlepopUp=this.handlepopUp.bind(this)
+    this.handlePopUp= this.handlePopUp.bind(this)
+    this.handleLend=this.handleLend.bind(this)
     this.closePopup=this.closePopup.bind(this)
   }
   componentWillMount = async () => {
@@ -45,11 +46,21 @@ class Lending extends Component {
       showPopup: !this.state.showPopup
   });
   }
-  handlepopUp=(value)=>{
+  handleLend = async (value)=>{
     console.log("value on popup",value);
     this.setState({
+      lendingAmount: value,
       showPopup: !this.state.showPopup
-  });
+    }, async function() {
+      console.log(`Lending ${this.state.lendingAmount} ETH to the loan ${this.state.loanToLend}`);
+      await this.state.contract.methods.invest(this.state.loanToLend)
+          .send({ from: this.state.accounts[0], value: this.state.lendingAmount*10**18})
+          .then(res => {
+            console.log('Success', res);
+            alert(`You have successfully lent ${this.state.lendingAmount} ETH!`)
+          })
+          .catch(err => console.log(err))
+    });
   }
 
   GetAllRequestLoans = async () => {
@@ -95,9 +106,9 @@ class Lending extends Component {
     console.log(this.state.loanRequestsList);
     //this.setState({ loanRequestsList: dataList });
   }
-  handdleLend = () => {
-    this.setState({
-        showPopup: !this.state.showPopup
+  handlePopUp = (loanAddress) => {
+    this.setState({loanToLend: loanAddress}, function() {
+      this.setState({showPopup: !this.state.showPopup});
     });
   }
 
@@ -122,7 +133,7 @@ class Lending extends Component {
 
                 <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
               </Card.Text>
-              <Button  onClick={this.handdleLend} variant="primary">💰Lend money💰</Button>
+              <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">💰Lend money💰</Button>
             </Card.Body>
           </Card>
         </div>
@@ -144,7 +155,7 @@ class Lending extends Component {
           {this.PresentRequestLoans()}
           {this.state.showPopup ?
                     <LendingPopup
-                    handlepopUp={this.handlepopUp}
+                    handleLend={this.handleLend}
                     closePopup={this.closePopup}
                     />
                     : null

@@ -14,11 +14,11 @@
   "license": "ISC",
   "dependencies": {
     "@openzeppelin/contracts": "^4.1.0",
+    "@truffle/hdwallet-provider": ">1.0.4",
     "bignumber": "^1.1.0",
-    "bootstrap": "^5.0.1",
+    "bootstrap": "^5.0.2",
     "react-bootstrap": "^1.6.0",
-    "web3": "^1.4.0",
-    "@truffle/hdwallet-provider": ">1.0.4"
+    "web3": "^1.4.0"
   },
   "devDependencies": {
     "csv-loader": "^3.0.3"

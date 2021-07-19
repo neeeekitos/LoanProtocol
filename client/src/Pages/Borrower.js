@@ -28,7 +28,8 @@ class Borrower extends Component {
       txHash: null,
       repayAmount: 0,
       hasBorrow: false,
-      borrowerInfos: {}
+      borrowerInfos: {},
+      addTxLog:this.props.addTxLog
     };
 
     this.handleRequestedAmount = this.handleRequestedAmount.bind(this);
@@ -65,7 +66,8 @@ class Borrower extends Component {
               interest: result[1],
               repaymentsCount: result[2],
               investorsAndRecommendersNumber: result[3],
-              collateral: result[4]
+              collateral: result[4],
+              investedAmount: result[5]
             }});
         });
         console.log('Active loan found');
@@ -111,6 +113,7 @@ class Borrower extends Component {
         if (txReceipt.status) {
           alert("Your loan request is created!!");
           this.handleActiveLoanFound();
+          this.props.addTxLog(txReceipt);
 
           this.setState({requestedAmount: "", repaymentsCount: "", loanDescription: "" });
         }
@@ -168,6 +171,7 @@ class Borrower extends Component {
                   <Card.Title>Requested amount : {this.state.borrowerInfos.requestedAmount} ETH</Card.Title>
                   <ListGroup className="list-group-flush">
                     <ListGroupItem>Investors / Recommenders : {this.state.borrowerInfos.investorsAndRecommendersNumber}</ListGroupItem>
+                    <ListGroupItem>Total lent amount : {this.state.borrowerInfos.investedAmount/(10**18)} ETH</ListGroupItem>
                     <ListGroupItem>Collateral : {this.state.borrowerInfos.collateral} ETH</ListGroupItem>
                     <ListGroupItem>Interest : {this.state.borrowerInfos.interest} %</ListGroupItem>
                     <ListGroupItem>Repayment Count : {this.state.borrowerInfos.repaymentsCount} times</ListGroupItem>

@@ -25,7 +25,7 @@ class MainPage extends Component {
             orbitDb: null,
             lending: false,
             borrowing: false,
-            recommender: false,
+            recommender: false
         };
     }
 
@@ -37,8 +37,6 @@ class MainPage extends Component {
             balance: this.props.balance,
             orbitDb: this.props.orbitDb });
     };
-
-
 
 
     render() {
@@ -58,16 +56,19 @@ class MainPage extends Component {
                                web3={this.state.web3}
                                balance={this.state.balance}
                                orbitDb={this.state.orbitDb}
+                               addTxLog={this.props.addTxLog}
                                contract={this.state.contract}/>) :
                     this.state.lending ?
-                        (<Lending account={this.state.accounts[0]}
+                        (<Lending accounts={this.state.accounts}
                                   balance={this.state.balance}
                                   web3={this.state.web3}
+                                  addTxLog={this.props.addTxLog}
                                   contract={this.state.contract}/>) :
                         this.state.recommender ?
-                            (<Recomender  account={this.state.accounts[0]}
+                            (<Recomender  accounts={this.state.accounts}
                                           balance={this.state.balance}
                                           web3={this.state.web3}
+                                          addTxLog={this.props.addTxLog}
                                           contract={this.state.contract}/>) : null}
 
             </div>

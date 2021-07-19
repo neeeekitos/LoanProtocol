@@ -19,9 +19,7 @@ class LendingPopup extends Component {
     handleSubmission =  (e) => {
         this.setState({amountToLend: e.target.value})
         console.log(this.state.amountToLend);
-        this.props.handlepopUp( this.state.amountToLend)
-
-        
+        this.props.handleLend(this.state.amountToLend)
     };
     handleLendingAmount(e) {
         this.setState({amountToLend: e.target.value})
