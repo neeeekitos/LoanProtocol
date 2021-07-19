@@ -26,6 +26,7 @@ contract Loan {
     uint constant loanExpirationInterval = 86400; // 1 DAY
     uint investorsAndRecommendersNumber;
     uint collateral;
+    uint investedAmount;
 
     mapping(address => bool) public lenders;
 
@@ -155,8 +156,8 @@ contract Loan {
         return (interest, requestedAmount);
     }
 
-    function getInfosForBorrower() public view returns (uint256, uint256, uint256, uint256, uint256) {
-        return (requestedAmount, interest, repaymentsCount, investorsAndRecommendersNumber, collateral);
+    function getInfosForBorrower() public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
+        return (requestedAmount, interest, repaymentsCount, investorsAndRecommendersNumber, collateral, investedAmount);
     }
 
     /** @dev Trustworthiness score calculation function
@@ -204,6 +205,7 @@ contract Loan {
         //     // TODO event changed state
 
         // }
+        investedAmount += msg.value;
         investorsAndRecommendersNumber++;
         // lenders[msg.sender] = true;
         // lendersInvestedAmount[msg.sender] = lendersInvestedAmount[msg.sender].add(msg.value.sub(extraMoney));

@@ -61,7 +61,7 @@ contract DynamicCollateralLending {
         return users[msg.sender].activeLoan != address(0);
     }
 
-    function getBorrowerInfos() public view returns (uint256, uint256, uint256, uint256, uint256) {
+    function getBorrowerInfos() public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
         return Loan(users[msg.sender].activeLoan).getInfosForBorrower();
     }
 

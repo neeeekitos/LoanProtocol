@@ -15,7 +15,7 @@ class Recommender extends Component {
     super(props);
 
     this.state = {
-      accounts: null,
+      accounts: this.props.accounts,
       web3: this.props.web3,
       contract: this.props.contract,
       balance: null,
