@@ -7,11 +7,6 @@ import Lending from './Lending';
 import Recomender from './Recomender';
 
 
-
-
-
-
-
 class MainPage extends Component {
 
     constructor(props) {

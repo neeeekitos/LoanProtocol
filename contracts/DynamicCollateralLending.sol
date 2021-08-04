@@ -8,11 +8,20 @@ contract DynamicCollateralLending {
 
     using Math for uint;
 
+    struct TScore {
+        uint8 profileScore;
+        uint8 activityScore;
+        uint8 socialRecommendationScore;
+        uint8 loanRiskScore;
+    }
+
     struct User {
         bool fraudStatus;
         address activeLoan;
         address activeSupply;
         address orbitDbIndexHash;
+
+        TScore tScore;
     }
 
     // Store all users with their address
@@ -24,7 +33,8 @@ contract DynamicCollateralLending {
     /** @dev Events
     *
     */
-    event LogLoanRequestedPosted(address indexed _address, uint indexed timestamp, address indexed _loanAddress);
+    event LoanRequestedPosted(address indexed _address, uint indexed timestamp, address indexed _loanAddress);
+    event TScoreInitialized(address indexed _address, uint indexed timestamp);
 
     function applyForLoan(uint _requestedAmount, uint _repaymentsCount, uint _interest) public {
 
@@ -35,8 +45,13 @@ contract DynamicCollateralLending {
          assert(users[msg.sender].activeLoan == address(0));*/
         uint creationTime = block.timestamp+30;
 
-
-        Loan loan = new Loan(msg.sender, _requestedAmount, _repaymentsCount, _interest, creationTime);
+        TScore tScore;
+        if (users[msg.sender] == address(0x0)) {
+            initTScore();
+        } else {
+            tScore = users[msg.sender];
+        }
+        Loan loan = new Loan(msg.sender, _requestedAmount, _repaymentsCount, _interest, creationTime, tScore);
         //        address loanAddr = address(0);
 
         address loanAddr = address(loan);
@@ -46,7 +61,7 @@ contract DynamicCollateralLending {
         userAddr.push(msg.sender);
         addressRegistryCount++;
 
-        emit LogLoanRequestedPosted(msg.sender, block.timestamp, loanAddr);
+        emit LoanRequestedPosted(msg.sender, block.timestamp, loanAddr);
     }
 
     function getHashesOfLoanRequests() public view returns (address[] memory){
@@ -75,6 +90,10 @@ contract DynamicCollateralLending {
 
     function getBalance() public view returns (uint256) {
         return Loan(users[msg.sender].activeLoan).getBalance();
+    }
+
+    function initTScore() internal {
+        emit TScoreInitialized(msg.sender, block.timestamp);
     }
 
     function test() public {
