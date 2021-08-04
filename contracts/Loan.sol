@@ -244,6 +244,7 @@ contract Loan {
         }
 
         totalInvestedAmount += msg.value;
+
         investorsAndRecommendersNumber++;
         lenders[msg.sender] = true;
         investedOrRecommendedAmount[msg.sender] = investedOrRecommendedAmount[msg.sender].add(msg.value.sub(extraMoney));
