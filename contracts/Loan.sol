@@ -2,31 +2,45 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "./DynamicCollateralLending.sol";
 
 contract Loan {
 
     using SafeMath for uint;
 
+    /** @dev Loan related infos
+    *
+    */
     address borrower;
+    TScore tScore;
     // Requested amount for a loan
-    uint requestedAmount;
+    uint public requestedAmount;
     // Amount to be returned by the borrower (with an interest)
     uint repaymentsCount;
     // Loan interest
     uint public interest;
     // The money is sent to the user only when the loan is started
-    bool active;
+    bool active = false;
+
     uint returnAmount;
-    uint loanCreationDate;
+    uint256 loanCreationDate;
     uint lastRepaymentDate;
     uint remainingPayments;
     uint repaymentInstallment;
     uint repaidAmount;
+    uint collateral; // percentage of a requested amount
     uint constant loanExpirationInterval = 86400; // 1 DAY
 
-    mapping(address => bool) public lenders;
+    /** @dev Investors and Recommenders infos
+    *
+    */
+    uint investorsAndRecommendersNumber;
+    uint totalInvestedAmount;
+    uint totalRecommendedAmount;
 
-    mapping(address => uint) lendersInvestedAmount;
+    mapping(address => bool) public lenders;
+    mapping(address => bool) public recommenders;
+    mapping(address => uint) investedOrRecommendedAmount;
 
     /** Stages that every credit contract gets trough.
       *   investment - During this state only investments are allowed.
@@ -47,7 +61,7 @@ contract Loan {
     *
     */
     event LogCreditInitialized(address indexed _address, uint indexed timestamp);
-    event LogCreditStateChanged(State indexed state, uint indexed timestamp);
+    event LoanStateChanged(State indexed state, uint indexed timestamp);
     event LogCreditStateActiveChanged(bool indexed active, uint indexed timestamp);
 
     event LogBorrowerWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);
@@ -56,16 +70,21 @@ contract Loan {
     event LogBorrowerChangeReturned(address indexed _address, uint indexed _amount, uint indexed timestamp);
     event LogBorrowerIsFraud(address indexed _address, bool indexed fraudStatus, uint indexed timestamp);
 
-    event LogLenderInvestment(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event Invested(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event Recommended(address indexed _address, uint indexed _amount, uint indexed timestamp);
+
     event LogLenderWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event LogRecommenderWithdrawal(address indexed _address, uint indexed _amount, uint indexed timestamp);
     event LogLenderChangeReturned(address indexed _address, uint indexed _amount, uint indexed timestamp);
     event LogLenderVoteForRevoking(address indexed _address, uint indexed timestamp);
     event LogLenderVoteForFraud(address indexed _address, uint indexed timestamp);
-    event LogLenderRefunded(address indexed _address, uint indexed _amount, uint indexed timestamp);
+    event ExtraAmountRefunded(address indexed _address, uint indexed _amount, uint indexed timestamp);
 
     /** @dev Modifiers
     *
     */
+
+    // used for a withdraw function
     modifier isActive() {
         require(active == true);
         _;
@@ -77,6 +96,7 @@ contract Loan {
         _;
     }
 
+    // used for a withdraw function
     modifier onlyBorrower() {
         require(msg.sender == borrower);
         _;
@@ -89,12 +109,17 @@ contract Loan {
 
     modifier canAskForInterest() {
         require(state == State.interestReturns);
-        require(lendersInvestedAmount[msg.sender] > 0);
+        require(investedOrRecommendedAmount[msg.sender] > 0);
         _;
     }
 
     modifier canInvest() {
         require(state == State.investment);
+        _;
+    }
+
+    modifier canRecommend() {
+        require(state == State.investment && collateral > 0);
         _;
     }
 
@@ -124,72 +149,108 @@ contract Loan {
         _;
     }
 
-    constructor (address _borrower, uint _requestedAmount, uint _repaymentsCount, uint _interest) public {
+    constructor (
+        address _borrower,
+        uint _requestedAmount,
+        uint _repaymentsCount,
+        uint _interest,
+        uint _loanCreationDate,
+        TScore storage _tScore
+    ) public {
+
         borrower = _borrower;
         requestedAmount = _requestedAmount;
         repaymentsCount = _repaymentsCount;
         interest =  _interest;
+        loanCreationDate = _loanCreationDate;
 
         // Calculate the amount to return by the borrower
         returnAmount = requestedAmount.add(interest);
-        loanCreationDate = block.timestamp;
 
-        // Loan can onlu start when sufficient funds are invested
-        active = false;
+        // Loan can only start when sufficient funds are invested
 
         uint lastRepaymentDate = 0;
+        collateral = 2;
+        investorsAndRecommendersNumber = 0;
         uint remainingPayments = _requestedAmount;
-        uint repaymentInstallment = remainingPayments.div(_repaymentsCount);
+        /*uint repaymentInstallment = remainingPayments.div(_repaymentsCount);*/
         uint repaidAmount = 0;
+        tScore = _tScore;
+
+        // 1 state of a loan
+        state = State.investment;
     }
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
 
+    function getProjectInfos() public view returns (uint256, uint256) {
+        return (interest, requestedAmount);
+    }
+
+    function getInfosForBorrower() public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
+        return (requestedAmount, interest, repaymentsCount, investorsAndRecommendersNumber, collateral, totalInvestedAmount);
+    }
+
+    // TODO recheck this function
     /** @dev Trustworthiness score calculation function
       * Calculates trustworthiness score based on
       * borrower's attributes
       */
     function requestTScore() public view returns (uint) {
-        // TODO place a magic formula here...
-        return 0;
+        return tScore;
     }
 
-    // TODO recheck this function
+    /** @dev Recommend function.
+      * Provides functionality for person to recommend someone's project,
+      * incentivized by the return of interest.
+      */
+    function recommend() public canRecommend payable {
+
+        totalRecommendedAmount += msg.value;
+        investorsAndRecommendersNumber++;
+        recommenders[msg.sender] = true;
+        investedOrRecommendedAmount[msg.sender] = investedOrRecommendedAmount[msg.sender];
+
+        emit Recommended(msg.sender, msg.value.sub(extraMoney), block.timestamp);
+
+    }
+
     /** @dev Invest function.
       * Provides functionality for person to invest in someone's project,
       * incentivized by the return of interest.
       */
-    // TODO add canInvest modifier
-    function lend() public  payable {
+    function lend() public canInvest payable {
 
-        // uint extraMoney = 0;
+        uint extraMoney = 0;
 
-        // if (address(this).balance>= requestedAmount) {
-        //     extraMoney = address(this).balance.sub(requestedAmount);
-        //     assert(requestedAmount == address(this).balance.sub(extraMoney));
+        if (address(this).balance >= requestedAmount) {
+             extraMoney = address(this).balance.sub(requestedAmount);
+             assert(requestedAmount == address(this).balance.sub(extraMoney));
 
-        //     // Assert that there is no overflow / underflow
-        //     assert(extraMoney <= msg.value);
+             // Assert that there is no overflow / underflow
+             assert(extraMoney <= msg.value);
 
-        //     if (extraMoney > 0) {
-        //         // return extra money to the sender
-        //         payable(msg.sender).transfer(extraMoney);
+             if (extraMoney > 0) {
+                 // return extra money to the sender
+                 payable(msg.sender).transfer(extraMoney);
+                 emit ExtraAmountRefunded(msg.sender, extraMoney, block.timestamp);
 
-        //         // TODO event change returned
-        //     }
+                 state = State.repayment;
+                 emit LoanStateChanged(state, block.timestamp);
 
-        //     state = State.repayment;
+             }
+        }
 
-        //     // TODO event changed state
+        totalInvestedAmount += msg.value;
 
-        // }
+        investorsAndRecommendersNumber++;
+        lenders[msg.sender] = true;
+        investedOrRecommendedAmount[msg.sender] = investedOrRecommendedAmount[msg.sender].add(msg.value.sub(extraMoney));
 
-        // lenders[msg.sender] = true;
-        // lendersInvestedAmount[msg.sender] = lendersInvestedAmount[msg.sender].add(msg.value.sub(extraMoney));
+        emit Invested(msg.sender, msg.value.sub(extraMoney), block.timestamp);
 
-        // // TODO event invested amount
     }
 
     // TODO recheck this function
@@ -246,12 +307,12 @@ contract Loan {
         state = State.repayment;
 
         // Log state change.
-        emit LogCreditStateChanged(state, block.timestamp);
+        emit LoanStateChanged(state, block.timestamp);
 
         // Log borrower withdrawal.
         emit LogBorrowerWithdrawal(msg.sender, address(this).balance, block.timestamp);
 
-        // Transfer the gathered amount to the credit borrower.
+        // Transfer the gathered amount to the loan borrower.
         payable(borrower).transfer(address(this).balance);
     }
 
@@ -290,7 +351,7 @@ contract Loan {
             state = State.expired;
 
             // Log state change.
-            emit LogCreditStateChanged(state, block.timestamp);
+            emit LoanStateChanged(state, block.timestamp);
         }
     }
 }
