@@ -21,7 +21,7 @@ npm i
 
 // launch local blockchain (9545 port)
 truffle develop
-truffle midgrate
+truffle migrate
 
 // open another console
 cd client/
