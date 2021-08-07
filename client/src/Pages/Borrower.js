@@ -113,7 +113,9 @@ class Borrower extends Component {
         if (txReceipt.status) {
           alert("Your loan request is created!!");
           this.handleActiveLoanFound();
+/*
           this.props.addTxLog(txReceipt);
+*/
 
           this.setState({requestedAmount: "", repaymentsCount: "", loanDescription: "" });
         }

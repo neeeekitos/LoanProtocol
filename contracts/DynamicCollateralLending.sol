@@ -44,14 +44,14 @@ contract DynamicCollateralLending {
          // The user must not have any loan in progress
          assert(users[msg.sender].activeLoan == address(0));*/
         uint creationTime = block.timestamp+30;
-
-        TScore tScore;
+/*
+        TScore storage tScore;
         if (users[msg.sender] == address(0x0)) {
             initTScore();
         } else {
             tScore = users[msg.sender];
-        }
-        Loan loan = new Loan(msg.sender, _requestedAmount, _repaymentsCount, _interest, creationTime, tScore);
+        }*/
+        Loan loan = new Loan(msg.sender, _requestedAmount, _repaymentsCount, _interest, creationTime);
         //        address loanAddr = address(0);
 
         address loanAddr = address(loan);

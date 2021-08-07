@@ -12,7 +12,6 @@ contract Loan {
     *
     */
     address borrower;
-    TScore tScore;
     // Requested amount for a loan
     uint public requestedAmount;
     // Amount to be returned by the borrower (with an interest)
@@ -154,8 +153,7 @@ contract Loan {
         uint _requestedAmount,
         uint _repaymentsCount,
         uint _interest,
-        uint _loanCreationDate,
-        TScore storage _tScore
+        uint _loanCreationDate
     ) public {
 
         borrower = _borrower;
@@ -175,7 +173,6 @@ contract Loan {
         uint remainingPayments = _requestedAmount;
         /*uint repaymentInstallment = remainingPayments.div(_repaymentsCount);*/
         uint repaidAmount = 0;
-        tScore = _tScore;
 
         // 1 state of a loan
         state = State.investment;
@@ -199,7 +196,7 @@ contract Loan {
       * borrower's attributes
       */
     function requestTScore() public view returns (uint) {
-        return tScore;
+        return 0;
     }
 
     /** @dev Recommend function.
@@ -213,7 +210,7 @@ contract Loan {
         recommenders[msg.sender] = true;
         investedOrRecommendedAmount[msg.sender] = investedOrRecommendedAmount[msg.sender];
 
-        emit Recommended(msg.sender, msg.value.sub(extraMoney), block.timestamp);
+        emit Recommended(msg.sender, msg.value, block.timestamp);
 
     }
 
