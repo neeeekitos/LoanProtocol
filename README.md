@@ -29,6 +29,7 @@ npm start
 ### Apply for a loan
 
 Click on the "Borrow button" just below the navbar.
+
 ![borrower page](https://drive.google.com/uc?export=view&id=1t6DEcz2uzhvRZme2D6wHp1KIXoaBarCl)
 ---
 ### Upload your transactions (.csv file) directly on the blockchain
