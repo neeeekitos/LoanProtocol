@@ -35,11 +35,13 @@ Click on the "Borrow button" just below the navbar.
 ### Upload your transactions (.csv file) directly on the blockchain
 
 Click on "show popup" button to upload a file.
+
 ![borrower page](https://drive.google.com/uc?export=view&id=19nWdxRpRTJz9I8U7ha51NSJQsjZcWrXZ)
 ---
 ### Invest in someone's project
 
 Click on the "Lend button" just below the navbar,
+
 ![borrower page](https://drive.google.com/uc?export=view&id=19VuNHhHd7erk2OsqFUq-zioTPxx8Impk)
 ---
 ### Recommend someone's project
