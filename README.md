@@ -27,16 +27,20 @@ npm start
 
 ---
 ### Apply for a loan
+
 Click on the "Borrow button" just below the navbar.
 ![borrower page](https://drive.google.com/uc?export=view&id=1t6DEcz2uzhvRZme2D6wHp1KIXoaBarCl)
 ---
 ### Upload your transactions (.csv file) directly on the blockchain
+
 Click on "show popup" button to upload a file.
 ![borrower page](https://drive.google.com/uc?export=view&id=19nWdxRpRTJz9I8U7ha51NSJQsjZcWrXZ)
 ---
 ### Invest in someone's project
+
 Click on the "Lend button" just below the navbar,
 ![borrower page](https://drive.google.com/uc?export=view&id=19VuNHhHd7erk2OsqFUq-zioTPxx8Impk)
 ---
 ### Recommend someone's project
+
 This feature is not finished yet, you will be able to recommend someone's project by sending a small amount of ether to make a proof of your recommendation. If your recommended project is not scam, you will get back your amount with an interest.
