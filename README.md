@@ -2,7 +2,13 @@
 
 This app is an Ethereum smart contract for supplying or borrowing assets. The lending platform automatically evaluates the users’ borrowers and computes their **trustworthiness score** automatically considering their loan activity. The main goal is to **lower or remove the collateral** thanks to the trustworthiness score and make lending more accessible.
 
-The **score** is based on *ProfileScore + ActivityScore + socialRecommendationScore + LoanRiskScore*, where *ProfileScore* is the Profile of users' borrowers, *ActivityScore* is the Financial Activity of users' borrowers, *SocialRecommendationScore* is a person who becomes a guarantee for users' borrowers, *LoanRiskScore* is the track record of users' borrowers in another loans.
+The **score** is based on 
+  - ProfileScore + 
+  - ActivityScore +
+  - socialRecommendationScore +
+  - LoanRiskScore
+  
+where *ProfileScore* is the Profile of users' borrowers, *ActivityScore* is the Financial Activity of users' borrowers, *SocialRecommendationScore* is a person who becomes a guarantee for users' borrowers, *LoanRiskScore* is the track record of users' borrowers in another loans.
 
 
 ### Installation
