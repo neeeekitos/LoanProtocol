@@ -37,15 +37,18 @@ class Lending extends Component {
     this.handleLend=this.handleLend.bind(this)
     this.closePopup=this.closePopup.bind(this)
   }
+
   componentWillMount = async () => {
     await this.GetAllRequestLoans();
     //this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
   };
-  closePopup=()=>{
+
+  closePopup=() => {
     this.setState({
       showPopup: !this.state.showPopup
-  });
+    });
   }
+
   handleLend = async (value)=>{
     console.log("value on popup",value);
     this.setState({
@@ -93,7 +96,7 @@ class Lending extends Component {
         const loanInfos = {
           address: contract._address,
           interest: result[0],
-          requestedAmount: result[1]
+          requestedAmount: this.state.web3.utils.fromWei(result[1].toString())
         };
         const dataListLoans = this.state.loanRequestsList.slice();
         dataListLoans.push(loanInfos);
@@ -106,6 +109,7 @@ class Lending extends Component {
     console.log(this.state.loanRequestsList);
     //this.setState({ loanRequestsList: dataList });
   }
+
   handlePopUp = (loanAddress) => {
     this.setState({loanToLend: loanAddress}, function() {
       this.setState({showPopup: !this.state.showPopup});

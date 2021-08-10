@@ -7,11 +7,13 @@ class RecommenderPopup extends Component {
         super(props);
 
         this.state = {
-           amountToRecommend:0,
+            recommendAmount:0,
+            recommendScore:0
         }
 
         this.handleSubmission=this.handleSubmission.bind(this);
         this.handleRecommendAmount=this.handleRecommendAmount.bind(this)
+        this.handleRecommendScore=this.handleRecommendScore.bind(this)
     }
 
 
@@ -19,13 +21,16 @@ class RecommenderPopup extends Component {
     handleSubmission =  (e) => {
         this.setState({amountToRecommend: e.target.value})
         console.log(this.state.amountToRecommend);
-        this.props.handlepopUp( this.state.amountToRecommend)
-
-        
+        this.props.handleRecommend(this.state.amountToRecommend, this.state.recommendationScore)
     };
-    handleRecommendAmount(e) {
+
+    handleRecommendAmount = (e) => {
         this.setState({amountToRecommend: e.target.value})
-      }
+    }
+
+    handleRecommendScore = (e) => {
+        this.setState({recommendationScore: e.target.value})
+    }
 
     render() {
         return (
@@ -39,7 +44,10 @@ class RecommenderPopup extends Component {
                             <Form.Group controlId="formBasicText">
 
                                 <Form.Label>Recommend Amount in ETH</Form.Label>
-                                <Form.Control type="number" value={this.state.amountToRecommend} placeholder="1" onChange={this.handleLendingAmount} />
+                                <Form.Control type="number" value={this.state.amountToRecommend} placeholder="1" onChange={this.handleRecommendAmount} />
+
+                                <Form.Label>Recommendation score (0 to 100)</Form.Label>
+                                <Form.Control type="number" value={this.state.recommendationScore} placeholder="1" onChange={this.handleRecommendScore} />
                             </Form.Group>
                         </Form>
                         <div>

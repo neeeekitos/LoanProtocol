@@ -62,12 +62,14 @@ class Borrower extends Component {
           console.log('result' + JSON.stringify(result));
 
           this.setState({borrowerInfos: {
-              requestedAmount: result[0],
+              requestedAmount: this.state.web3.utils.fromWei(result[0].toString()),
               interest: result[1],
               repaymentsCount: result[2],
-              investorsAndRecommendersNumber: result[3],
-              collateral: result[4],
-              investedAmount: result[5]
+              investorsNumber: result[3],
+              recommendersNumber: result[4],
+              tScore: result[5],
+              collateral: result[6],
+              investedAmount: result[7]
             }});
         });
         console.log('Active loan found');
@@ -97,12 +99,15 @@ class Borrower extends Component {
   handleBorrow = async (event) => {
     event.preventDefault();
     console.log("Waiting on borrow transaction success...");
+    console.log(      (this.state.requestedAmount*10**18).toString()
+    );
     this.setState({ pendingTransaction: true });
 
+    let requestedAmountInt = this.state.web3.utils.toWei(this.state.requestedAmount.toString(), 'ether')
     await this.state.contract.methods.applyForLoan(
-      this.state.requestedAmount,
-      this.state.repaymentsCount,
-      2)
+        requestedAmountInt,
+        this.state.repaymentsCount,
+        2)
       .send({ from: this.props.accounts[0], gas: 3000000 },
         (err, txHash) => this.setState({ isMining: true, txHash }));
 
@@ -161,7 +166,7 @@ class Borrower extends Component {
   };
 
   PresentBorrowerLoan = () => {
-    if (this.state.hasBorrow)
+    if (this.state.hasBorrow) {
       return (
           <div>
             <Modal.Dialog>
@@ -172,7 +177,9 @@ class Borrower extends Component {
                 <Card.Body>
                   <Card.Title>Requested amount : {this.state.borrowerInfos.requestedAmount} ETH</Card.Title>
                   <ListGroup className="list-group-flush">
-                    <ListGroupItem>Investors / Recommenders : {this.state.borrowerInfos.investorsAndRecommendersNumber}</ListGroupItem>
+                    <ListGroupItem>Investors number : {this.state.borrowerInfos.investorsNumber}</ListGroupItem>
+                    <ListGroupItem>Recommenders number : {this.state.borrowerInfos.recommendersNumber}</ListGroupItem>
+                    <ListGroupItem>Your TScore : {this.state.borrowerInfos.tScore}</ListGroupItem>
                     <ListGroupItem>Total lent amount : {this.state.borrowerInfos.investedAmount/(10**18)} ETH</ListGroupItem>
                     <ListGroupItem>Collateral : {this.state.borrowerInfos.collateral} ETH</ListGroupItem>
                     <ListGroupItem>Interest : {this.state.borrowerInfos.interest} %</ListGroupItem>
@@ -193,6 +200,7 @@ class Borrower extends Component {
             </Modal.Dialog>
           </div>
       )
+    }
   }
 
 

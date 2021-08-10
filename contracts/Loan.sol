@@ -3,8 +3,11 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./DynamicCollateralLending.sol";
+import "./User.sol";
+import "./Exponential.sol";
+import "./TScoreController.sol";
 
-contract Loan {
+contract Loan is Exponential{
 
     using SafeMath for uint;
 
@@ -12,6 +15,7 @@ contract Loan {
     *
     */
     address borrower;
+    address tScoreController;
     // Requested amount for a loan
     uint public requestedAmount;
     // Amount to be returned by the borrower (with an interest)
@@ -33,13 +37,20 @@ contract Loan {
     /** @dev Investors and Recommenders infos
     *
     */
-    uint investorsAndRecommendersNumber;
+    uint investorsCount;
     uint totalInvestedAmount;
     uint totalRecommendedAmount;
 
     mapping(address => bool) public lenders;
     mapping(address => bool) public recommenders;
+    mapping(address => uint8) public recommendedScore;
     mapping(address => uint) investedOrRecommendedAmount;
+    address[] recommenderAddr;
+
+    // Store the lenders count, later needed for revoke vote.
+    uint lendersCount = 0;
+    uint recommendersCount = 0;
+
 
     /** Stages that every credit contract gets trough.
       *   investment - During this state only investments are allowed.
@@ -51,9 +62,6 @@ contract Loan {
     */
     enum State { investment, repayment, interestReturns, expired, revoked, fraud }
     State state;
-
-    // Store the lenders count, later needed for revoke vote.
-    uint lendersCount = 0;
 
 
     /** @dev Events
@@ -153,7 +161,8 @@ contract Loan {
         uint _requestedAmount,
         uint _repaymentsCount,
         uint _interest,
-        uint _loanCreationDate
+        uint _loanCreationDate,
+        address _tScoreController
     ) public {
 
         borrower = _borrower;
@@ -169,10 +178,12 @@ contract Loan {
 
         uint lastRepaymentDate = 0;
         collateral = 2;
-        investorsAndRecommendersNumber = 0;
+        investorsCount = 0;
         uint remainingPayments = _requestedAmount;
         /*uint repaymentInstallment = remainingPayments.div(_repaymentsCount);*/
         uint repaidAmount = 0;
+
+        tScoreController = _tScoreController;
 
         // 1 state of a loan
         state = State.investment;
@@ -186,31 +197,55 @@ contract Loan {
         return (interest, requestedAmount);
     }
 
-    function getInfosForBorrower() public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
-        return (requestedAmount, interest, repaymentsCount, investorsAndRecommendersNumber, collateral, totalInvestedAmount);
+    function getInfosForBorrower() public view returns (
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        uint256)
+    {
+        return (
+        requestedAmount,
+        interest,
+        repaymentsCount,
+        investorsCount,
+        recommendersCount,
+        requestTScore(),
+        collateral,
+        totalInvestedAmount);
     }
 
-    // TODO recheck this function
     /** @dev Trustworthiness score calculation function
       * Calculates trustworthiness score based on
       * borrower's attributes
       */
     function requestTScore() public view returns (uint) {
-        return 0;
+        return TScoreController(tScoreController).getTScore(borrower);
     }
 
     /** @dev Recommend function.
       * Provides functionality for person to recommend someone's project,
       * incentivized by the return of interest.
       */
-    function recommend() public canRecommend payable {
+    function recommend(uint8 score, address recommenderAddress) public canRecommend payable {
+
+        require(score > 0 && score <= 100);
+        require(!recommenders[recommenderAddress], "You have already recommended");
 
         totalRecommendedAmount += msg.value;
-        investorsAndRecommendersNumber++;
-        recommenders[msg.sender] = true;
-        investedOrRecommendedAmount[msg.sender] = investedOrRecommendedAmount[msg.sender];
+        recommenders[recommenderAddress] = true;
+        investedOrRecommendedAmount[recommenderAddress] = msg.value;
+        recommendedScore[recommenderAddress] = score;
 
-        emit Recommended(msg.sender, msg.value, block.timestamp);
+        recommenderAddr.push(recommenderAddress);
+        recommendersCount++;
+
+        TScoreController(tScoreController).updateSocialRecommendationScore(address(this), borrower, 0, 0);
+
+        emit Recommended(recommenderAddress, msg.value, block.timestamp);
 
     }
 
@@ -218,9 +253,10 @@ contract Loan {
       * Provides functionality for person to invest in someone's project,
       * incentivized by the return of interest.
       */
-    function lend() public canInvest payable {
+    function lend(address investorAddress) public canInvest payable {
 
         uint extraMoney = 0;
+        uint balance = address(this).balance;
 
         if (address(this).balance >= requestedAmount) {
              extraMoney = address(this).balance.sub(requestedAmount);
@@ -231,8 +267,8 @@ contract Loan {
 
              if (extraMoney > 0) {
                  // return extra money to the sender
-                 payable(msg.sender).transfer(extraMoney);
-                 emit ExtraAmountRefunded(msg.sender, extraMoney, block.timestamp);
+                 payable(investorAddress).transfer(extraMoney);
+                 emit ExtraAmountRefunded(investorAddress, extraMoney, block.timestamp);
 
                  state = State.repayment;
                  emit LoanStateChanged(state, block.timestamp);
@@ -242,11 +278,11 @@ contract Loan {
 
         totalInvestedAmount += msg.value;
 
-        investorsAndRecommendersNumber++;
-        lenders[msg.sender] = true;
-        investedOrRecommendedAmount[msg.sender] = investedOrRecommendedAmount[msg.sender].add(msg.value.sub(extraMoney));
+        investorsCount++;
+        lenders[investorAddress] = true;
+        investedOrRecommendedAmount[investorAddress] = investedOrRecommendedAmount[investorAddress].add(msg.value.sub(extraMoney));
 
-        emit Invested(msg.sender, msg.value.sub(extraMoney), block.timestamp);
+        emit Invested(investorAddress, msg.value.sub(extraMoney), block.timestamp);
 
     }
 
@@ -350,5 +386,28 @@ contract Loan {
             // Log state change.
             emit LoanStateChanged(state, block.timestamp);
         }
+    }
+
+    /** @dev Values and Weights function
+      * calculates weights for each recommender's score and returns an array
+      */
+    function getRecommendersWeightsAndValues() public view returns (Exp[] memory, uint8[] memory){
+
+        Exp[] memory weights = new Exp[](recommendersCount);
+        uint8[] memory scores = new uint8[](recommendersCount);
+
+        for (uint i = 0; i < recommendersCount; i++) {
+
+            address recommender = recommenderAddr[i];
+
+            if (recommenders[recommender]) {
+
+                Exp memory recommendedAmount = Exp({mantissa: investedOrRecommendedAmount[recommender]});
+
+                (,weights[i]) = divExp(recommendedAmount, Exp({mantissa: totalRecommendedAmount}));
+                scores[i] = recommendedScore[recommender];
+            }
+        }
+        return (weights, scores);
     }
 }

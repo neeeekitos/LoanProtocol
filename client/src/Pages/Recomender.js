@@ -27,14 +27,17 @@ class Recommender extends Component {
       orbitDb: this.props.orbitDb,
       showPopup: false,
       recommendAmount : 0,
+      recommendScore: 0,
+      loanToRecommend: ""
     };
 
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
     this.PresentRequestLoans = this.PresentRequestLoans.bind(this);
-    this.handlepopUp=this.handlepopUp.bind(this);
+    this.handlePopUp=this.handlePopUp.bind(this);
     this.closePopup=this.closePopup.bind(this);
     this.handleRecommend=this.handleRecommend.bind(this);
   }
+
   componentWillMount = async () => {
     await this.GetAllRequestLoans();
     // this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
@@ -70,7 +73,7 @@ class Recommender extends Component {
         const loanInfos = {
           address: contract._address,
           interest: result[0],
-          requestedAmount: result[1]
+          requestedAmount: this.state.web3.utils.fromWei(result[1].toString())
         };
         const dataListLoans = this.state.loanRequestsList.slice();
         dataListLoans.push(loanInfos);
@@ -90,19 +93,28 @@ class Recommender extends Component {
     });
   }
 
-  handlepopUp=(value)=>{
-    console.log("value on popup",value);
-    this.setState({
-      showPopup: !this.state.showPopup
-  });
+  handlePopUp = (loanAddress) => {
+    this.setState({loanToRecommend: loanAddress}, function() {
+      this.setState({showPopup: !this.state.showPopup});
+    });
   }
 
-  
-  handleRecommend = () => {
+  handleRecommend = async (recommendAmount, recommendScore)=>{
     this.setState({
-        showPopup: !this.state.showPopup
+      recommendAmount: recommendAmount,
+      recommendScore: recommendScore,
+      showPopup: !this.state.showPopup
+    }, async function() {
+      console.log(`Log: recommender send : ${recommendAmount}ETH with a score : ${recommendScore} to the loan ${this.state.loanToRecommend}`);
+      await this.state.contract.methods.recommend(this.state.loanToRecommend, recommendScore)
+          .send({ from: this.state.accounts[0], value: recommendAmount*10**18})
+          .then(res => {
+            console.log('Success', res);
+            alert(`You have successfully recommended a score of ${recommendScore} with an amount : ${recommendAmount} ETH!`)
+          })
+          .catch(err => console.log(err))
     });
-}
+  }
 
   PresentRequestLoans = () => {
     return (
@@ -125,7 +137,7 @@ class Recommender extends Component {
 
                       <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
                     </Card.Text>
-                    <Button onClick={this.handleRecommend} variant="primary">💰Recommend💰</Button>
+                    <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">💰Recommend💰</Button>
                   </Card.Body>
                 </Card>
               </div>
@@ -133,13 +145,7 @@ class Recommender extends Component {
         ))
   }
 
-
-
-
-
   render() {
-
-    const five = [1, 1, 1, 1, 1];
 
     return (
       <div className="App">
@@ -147,7 +153,7 @@ class Recommender extends Component {
           {this.PresentRequestLoans()}
           {this.state.showPopup ?
                     <RecommenderPopup
-                    handlepopUp={this.handlepopUp}
+                    handleRecommend={this.handleRecommend}
                     closePopup={this.closePopup}
                     />
                     : null
