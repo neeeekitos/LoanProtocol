@@ -1,6 +1,6 @@
 # LoanProtocol
 
-![borrower page](https://drive.google.com/uc?export=view&id=1AOw6zJ5a2xqSFLwQcYn4ermFICIO6f6Y)
+![borrower page](https://drive.google.com/uc?export=view&id=1Eddl5dpA7tF7ANYGdBwHV5CPOYDb7WRX)
 
 This app is an Ethereum smart contract for supplying or borrowing assets. The lending platform automatically evaluates the users’ borrowers and computes their **trustworthiness score** automatically considering their loan activity. The main goal is to **lower or remove the collateral** thanks to the trustworthiness score and make lending more accessible.
 
@@ -44,7 +44,7 @@ Click on the "Borrow button" just below the navbar.
 
 Click on "show popup" button to upload a file.
 
-![investor page](https://drive.google.com/uc?export=view&id=19nWdxRpRTJz9I8U7ha51NSJQsjZcWrXZ)
+![upload_transactions](https://drive.google.com/uc?export=view&id=19nWdxRpRTJz9I8U7ha51NSJQsjZcWrXZ)
 ---
 ### Invest in someone's project
 
