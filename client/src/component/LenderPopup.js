@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Button, Form, Modal } from "react-bootstrap";
 
-class LendingPopup extends Component {
+class LenderPopup extends Component {
 
     constructor(props) {
         super(props);
@@ -51,4 +51,4 @@ class LendingPopup extends Component {
         );
     }
 }
-export default LendingPopup;
+export default LenderPopup;
