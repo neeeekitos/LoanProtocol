@@ -1,6 +1,6 @@
 # LoanProtocol
 
-![main page](https://drive.google.com/uc?export=view&id=19VuNHhHd7erk2OsqFUq-zioTPxx8Impk)
+![main page](https://drive.google.com/uc?export=view&id=1Eddl5dpA7tF7ANYGdBwHV5CPOYDb7WRX)
 
 This app is an Ethereum smart contract for supplying or borrowing assets. The lending platform automatically evaluates the users’ borrowers and computes their **trustworthiness score** automatically considering their loan activity. The main goal is to **lower or remove the collateral** thanks to the trustworthiness score and make lending more accessible.
 
