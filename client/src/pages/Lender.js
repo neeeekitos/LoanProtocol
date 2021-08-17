@@ -1,31 +1,25 @@
-import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { Component } from "react";
-import { Button, Card, Nav, Navbar } from "react-bootstrap";
-import dbManagement from "../Component/database";
-import './Borrower.css';
-import "../index.css";
+import { Button, Card } from "react-bootstrap";
 import LoanContract from "../contracts/Loan.json";
-import LendingPopup from "../Component/LendingPopup";
+import LenderPopup from "../component/LenderPopup";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import "../index.css";
 
-
-
-
-class Lending extends Component {
+class Lender extends Component {
 
   constructor(props) {
     super(props);
 
     this.state = {
-      accounts: this.props.accounts,
+      account: this.props.account,
       web3: this.props.web3,
       contract: this.props.contract,
-      balance: null,
+      orbitDb: this.props.orbitDb,
       requestedAmount: 0,
       repaymentsCount: 0,
       loanDescription: '',
       pendingTransaction: false,
       loanRequestsList: [],
-      orbitDb: this.props.orbitDb,
       showPopup: false,
       lendingAmount: 0,
       loanToLend: ""
@@ -86,7 +80,7 @@ class Lending extends Component {
     const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
     console.log("hashes : " + loanHashes);
 
-    loanHashes.map((hash) => {
+    loanHashes.forEach((hash) => {
       let contract;
       contract = new this.state.web3.eth.Contract(LoanContract.abi, hash);
 
@@ -103,7 +97,6 @@ class Lending extends Component {
         this.setState({loanRequestsList: dataListLoans});
         console.log(dataListLoans);
       });
-
     });
 
     console.log(this.state.loanRequestsList);
@@ -137,7 +130,11 @@ class Lending extends Component {
 
                 <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
               </Card.Text>
-              <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">💰Lend money💰</Button>
+              <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">
+                <span role="img" aria-label="cash">💰</span>
+                Lend money
+                <span role="img" aria-label="cash">💰</span>
+              </Button>
             </Card.Body>
           </Card>
         </div>
@@ -150,15 +147,12 @@ class Lending extends Component {
 
 
   render() {
-
-    const five = [1, 1, 1, 1, 1];
-
     return (
       <div>
           <div style={{display:"flex", flexWrap:"wrap", justifyContent:"flex-start", width:"64rem", margin:"auto"}}>
           {this.PresentRequestLoans()}
           {this.state.showPopup ?
-                    <LendingPopup
+                    <LenderPopup
                     handleLend={this.handleLend}
                     closePopup={this.closePopup}
                     />
@@ -172,4 +166,4 @@ class Lending extends Component {
   }
 }
 
-export default Lending;
+export default Lender;

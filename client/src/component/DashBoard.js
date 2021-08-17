@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import { Button, Card, Modal } from "react-bootstrap";
 import Popup from "./CSVLoader";
 
-
 class Dashboard extends Component {
     constructor(props) {
         super(props);

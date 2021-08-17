@@ -1,10 +1,8 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { Component } from "react";
-import { Button, Card, Nav, Navbar } from "react-bootstrap";
-import dbManagement from "../Component/database";
-import './Borrower.css';
+import { Button, Card } from "react-bootstrap";
 import "../index.css"
-import RecommenderPopup from "../Component/RecommenderPopup";
+import RecommenderPopup from "../component/RecommenderPopup";
 import LoanContract from "../contracts/Loan.json";
 
 
@@ -15,16 +13,15 @@ class Recommender extends Component {
     super(props);
 
     this.state = {
-      accounts: this.props.accounts,
+      account: this.props.account,
       web3: this.props.web3,
       contract: this.props.contract,
-      balance: null,
+      orbitDb: this.props.orbitDb,
       requestedAmount: 0,
       repaymentsCount: 0,
       loanDescription: '',
       pendingTransaction: false,
       loanRequestsList: [],
-      orbitDb: this.props.orbitDb,
       showPopup: false,
       recommendAmount : 0,
       recommendScore: 0,
@@ -63,7 +60,7 @@ class Recommender extends Component {
     const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
     console.log("hashes : " + loanHashes);
 
-    loanHashes.map((hash) => {
+    loanHashes.forEach((hash) => {
       let contract;
       contract = new this.state.web3.eth.Contract(LoanContract.abi, hash);
 
@@ -84,7 +81,6 @@ class Recommender extends Component {
     });
 
     console.log(this.state.loanRequestsList);
-    //this.setState({ loanRequestsList: dataList });
   }
 
   closePopup=()=> {
@@ -137,7 +133,11 @@ class Recommender extends Component {
 
                       <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
                     </Card.Text>
-                    <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">💰Recommend💰</Button>
+                    <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">
+                      <span role="img" aria-label="cash">💰</span>
+                      Recommend
+                      <span role="img" aria-label="cash">💰</span>
+                    </Button>
                   </Card.Body>
                 </Card>
               </div>
@@ -146,7 +146,6 @@ class Recommender extends Component {
   }
 
   render() {
-
     return (
       <div className="App">
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "left",  width:"64rem", margin:"auto"}}>
@@ -165,5 +164,4 @@ class Recommender extends Component {
     );
   }
 }
-
 export default Recommender;
