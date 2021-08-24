@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "bootstrap": "^5.1.0",
     "dotenv": "^6.2.0",
     "ethers": "^5.4.1",
     "ipfs": "^0.55.4",
