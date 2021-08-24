@@ -1,8 +1,8 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { Component } from "react";
 import { Button, Form, Modal, Card, ListGroup, ListGroupItem } from "react-bootstrap";
-
-import loadRing from "./../assets/ring.gif";
+import { trackPromise } from 'react-promise-tracker';
+import LoadingSpiner from '../component/LoadingSpiner';
 import dbManagement from "../component/database";
 
 class Borrower extends Component {
@@ -26,7 +26,8 @@ class Borrower extends Component {
       repayAmount: 0,
       hasBorrow: false,
       borrowerInfos: {},
-      addTxLog:this.props.addTxLog
+      addTxLog:this.props.addTxLog,
+      componentNeedsUpdate: true
     };
 
     this.handleRequestedAmount = this.handleRequestedAmount.bind(this);
@@ -39,14 +40,34 @@ class Borrower extends Component {
     this.handleWithdraw = this.handleWithdraw.bind(this);
     this.PresentBorrowerLoan = this.PresentBorrowerLoan.bind(this);
     this.handleActiveLoanFound = this.handleActiveLoanFound.bind(this);
-
-    this.handleActiveLoanFound();
   }
 
-  componentDidMount = () => {
-    console.log("props contract", this.props.contract);
-    console.log("props account", this.props.account);
-  };
+  async componentDidUpdate(prevProps, prevState, snapshot) {
+
+    if (this.props.web3 == null && this.props.status === "connected") {
+      await trackPromise(this.props.initWeb3());
+    }
+
+    if (prevProps.contract == null && this.props.contract != null) {
+      this.handleActiveLoanFound();
+      this.setState({ componentNeedsUpdate: false });
+    }
+  }
+
+  async componentDidMount() {
+    this._isMounted = true;
+    if (this.props.web3 == null && this.props.status === "connected") {
+      await trackPromise(this.props.initWeb3());
+    }
+    if (this.props.contract != null && this.state.componentNeedsUpdate) {
+      this.handleActiveLoanFound();
+      this.setState({componentNeedsUpdate: false});
+    }
+  }
+
+  componentWillUnmount() {
+    this._isMounted = false;
+  }
 
   handleActiveLoanFound = () => {
     this.props.contract.methods.hasBorrow().call({ from: this.props.account}).then(result => {
@@ -56,7 +77,7 @@ class Borrower extends Component {
           console.log('result' + JSON.stringify(result));
 
           this.setState({borrowerInfos: {
-              requestedAmount: this.state.web3.utils.fromWei(result[0].toString()),
+              requestedAmount: this.props.web3.utils.fromWei(result[0].toString()),
               interest: result[1],
               repaymentsCount: result[2],
               investorsNumber: result[3],
@@ -98,15 +119,16 @@ class Borrower extends Component {
     this.setState({ pendingTransaction: true });
 
     let requestedAmountInt = this.state.web3.utils.toWei(this.state.requestedAmount.toString(), 'ether')
-    await this.props.contract.methods.applyForLoan(
+    let loanPromise = this.props.contract.methods.applyForLoan(
         requestedAmountInt,
         this.state.repaymentsCount,
         2)
       .send({ from: this.props.account, gas: 3000000 },
         (err, txHash) => this.setState({ isMining: true, txHash }));
+    await trackPromise(loanPromise);
 
     // mining is finished, display the gas used for the transaction
-    await this.props.web3.eth.getTransactionReceipt(this.state.txHash,
+    let receiptPromise = this.props.web3.eth.getTransactionReceipt(this.state.txHash,
       (err, txReceipt) => {
         console.log(txReceipt);
         if (txReceipt.status) {
@@ -120,6 +142,8 @@ class Borrower extends Component {
         }
         this.setState({ pendingTransaction: false });
       });
+    await trackPromise(receiptPromise);
+
   }
   handleUpdateDatabase = async (event) => {
     event.preventDefault();
@@ -201,6 +225,7 @@ class Borrower extends Component {
   render() {
     return (
         <div className="App">
+          <LoadingSpiner/>
           <Modal.Dialog>
             <Modal.Header>
               <Modal.Title>Apply for a loan</Modal.Title>
@@ -229,7 +254,6 @@ class Borrower extends Component {
               <Button onClick={this.handleBorrow} variant="primary">Borrow</Button>
               <Button onClick={this.handleUpdateDatabase} variant="dark">Update database</Button>
             </Modal.Footer>
-            <img id="loader" alt="loading" src={loadRing} hidden={!this.state.pendingTransaction} />
           </Modal.Dialog>
 
           {this.PresentBorrowerLoan()}

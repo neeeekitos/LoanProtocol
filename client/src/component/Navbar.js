@@ -18,13 +18,15 @@ export default function CustomNavbar(props) {
         props.web3.eth.getBalance(account).then(value => {
             setBalance(props.web3.utils.fromWei(value, 'ether'));
         });
+    } else if (props.web3 == null && status === "connected") {
+        props.initWeb3();
     }
 
     return (
         <div>
             <Router>
                 <Navbar
-                    styled
+                    // styled
                     style={{position: "relative", top: 0, width: "100vw", display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgb(234 234 234)"}}
                 >
 
@@ -41,11 +43,15 @@ export default function CustomNavbar(props) {
                         <Link to="/admin" className="navbar-light navbar-nav nav-link">AdminBoard</Link>
                     </Nav>
 
-                    <MetamaskButton/>
+                    <MetamaskButton initWeb3={() => {
+                        console.log('hui');
+                        props.initWeb3();
+                    }}/>
 
                     <Navbar.Text hidden={status !== 'connected'}>Balance: {balance} ETH</Navbar.Text>
                 </Navbar>
                 <Routes
+                    initWeb3={props.initWeb3}
                     status={status}
                     account={account}
                     contract={props.contract}

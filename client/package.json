@@ -12,6 +12,8 @@
     "papaparse": "^5.3.1",
     "react": "17.0.1",
     "react-dom": "17.0.1",
+    "react-loader-spinner": "^4.0.0",
+    "react-promise-tracker": "^2.1.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "3.2.0",
     "three": "^0.131.3",

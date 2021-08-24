@@ -4,6 +4,8 @@ import { Button, Card } from "react-bootstrap";
 import "../index.css"
 import RecommenderPopup from "../component/RecommenderPopup";
 import LoanContract from "../contracts/Loan.json";
+import LoadingSpiner from "../component/LoadingSpiner";
+import {trackPromise} from "react-promise-tracker";
 
 
 
@@ -14,8 +16,6 @@ class Recommender extends Component {
 
     this.state = {
       account: this.props.account,
-      web3: this.props.web3,
-      contract: this.props.contract,
       orbitDb: this.props.orbitDb,
       requestedAmount: 0,
       repaymentsCount: 0,
@@ -25,7 +25,8 @@ class Recommender extends Component {
       showPopup: false,
       recommendAmount : 0,
       recommendScore: 0,
-      loanToRecommend: ""
+      loanToRecommend: "",
+      componentNeedsUpdate: true
     };
 
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
@@ -35,10 +36,34 @@ class Recommender extends Component {
     this.handleRecommend=this.handleRecommend.bind(this);
   }
 
-  componentWillMount = async () => {
-    await this.GetAllRequestLoans();
-    // this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
-  };
+
+  async componentDidUpdate(prevProps, prevState, snapshot) {
+
+    if (this.props.web3 == null && this.props.status === "connected") {
+      await trackPromise(this.props.initWeb3());
+    }
+
+    if (prevProps.contract == null && this.props.contract != null && this.state.componentNeedsUpdate) {
+      this.setState({ componentNeedsUpdate: false });
+      await trackPromise(this.GetAllRequestLoans());
+    }
+  }
+
+  async componentDidMount() {
+    this._isMounted = true;
+    if (this.props.web3 == null && this.props.status === "connected") {
+      await trackPromise(this.props.initWeb3());
+    }
+    if (this.props.contract != null && this.state.componentNeedsUpdate) {
+      this.setState({componentNeedsUpdate: false});
+      await trackPromise(this.GetAllRequestLoans());
+    }
+  }
+
+  componentWillUnmount() {
+    this._isMounted = false;
+  }
+
 
   GetAllRequestLoans = async () => {
     this.setState({ message: "Fetching all loan requests.." });
@@ -57,12 +82,12 @@ class Recommender extends Component {
     </li>);
 */
     // fetch from contract
-    const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
+    const loanHashes = await this.props.contract.methods.getHashesOfLoanRequests().call();
     console.log("hashes : " + loanHashes);
 
     loanHashes.forEach((hash) => {
       let contract;
-      contract = new this.state.web3.eth.Contract(LoanContract.abi, hash);
+      contract = new this.props.web3.eth.Contract(LoanContract.abi, hash);
 
       contract.methods.getProjectInfos().call().then(result => {
         console.log('result' + JSON.stringify(result));
@@ -70,7 +95,7 @@ class Recommender extends Component {
         const loanInfos = {
           address: contract._address,
           interest: result[0],
-          requestedAmount: this.state.web3.utils.fromWei(result[1].toString())
+          requestedAmount: this.props.web3.utils.fromWei(result[1].toString())
         };
         const dataListLoans = this.state.loanRequestsList.slice();
         dataListLoans.push(loanInfos);
@@ -102,7 +127,7 @@ class Recommender extends Component {
       showPopup: !this.state.showPopup
     }, async function() {
       console.log(`Log: recommender send : ${recommendAmount}ETH with a score : ${recommendScore} to the loan ${this.state.loanToRecommend}`);
-      await this.state.contract.methods.recommend(this.state.loanToRecommend, recommendScore)
+      await this.props.contract.methods.recommend(this.state.loanToRecommend, recommendScore)
           .send({ from: this.state.accounts[0], value: recommendAmount*10**18})
           .then(res => {
             console.log('Success', res);
@@ -116,23 +141,21 @@ class Recommender extends Component {
     return (
         this.state.loanRequestsList.map((loanInfo, index) =>
             <div key={index} style={{padding:10}}  >
-              <div class="card-rounded grow shadow p-3 mb-5 bg-white">
+              <div className="card-rounded grow shadow p-3 mb-5 bg-white">
                 <Card style={{ width: '18rem',borderStyle:"none", cursor:"pointer" }} key={index} >
                   <Card.Body>
                     <Card.Title>Name project</Card.Title>
-                    <Card.Text>
-                      <p style={{margin:"20px"}}>
-                        Description of the project
-                      </p>
-                      <p>
-                        Requested amount : {loanInfo.requestedAmount} ETH
-                      </p>
-                      <p>
-                        {loanInfo.interest}% APY
-                      </p>
+                    <p style={{margin:"20px"}}>
+                      Description of the project
+                    </p>
+                    <p>
+                      Requested amount : {loanInfo.requestedAmount} ETH
+                    </p>
+                    <p>
+                      {loanInfo.interest}% APY
+                    </p>
 
-                      <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
-                    </Card.Text>
+                    <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
                     <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">
                       <span role="img" aria-label="cash">💰</span>
                       Recommend
@@ -148,6 +171,7 @@ class Recommender extends Component {
   render() {
     return (
       <div className="App">
+        <LoadingSpiner/>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "left",  width:"64rem", margin:"auto"}}>
           {this.PresentRequestLoans()}
           {this.state.showPopup ?

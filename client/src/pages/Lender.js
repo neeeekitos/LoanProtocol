@@ -4,6 +4,8 @@ import LoanContract from "../contracts/Loan.json";
 import LenderPopup from "../component/LenderPopup";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import "../index.css";
+import { trackPromise } from 'react-promise-tracker';
+import LoadingSpiner from '../component/LoadingSpiner';
 
 class Lender extends Component {
 
@@ -12,8 +14,6 @@ class Lender extends Component {
 
     this.state = {
       account: this.props.account,
-      web3: this.props.web3,
-      contract: this.props.contract,
       orbitDb: this.props.orbitDb,
       requestedAmount: 0,
       repaymentsCount: 0,
@@ -22,7 +22,8 @@ class Lender extends Component {
       loanRequestsList: [],
       showPopup: false,
       lendingAmount: 0,
-      loanToLend: ""
+      loanToLend: "",
+      componentNeedsUpdate: true
     };
 
     this.GetAllRequestLoans = this.GetAllRequestLoans.bind(this);
@@ -32,10 +33,32 @@ class Lender extends Component {
     this.closePopup=this.closePopup.bind(this)
   }
 
-  componentWillMount = async () => {
-    await this.GetAllRequestLoans();
-    //this.setState({ loanRequestsList: [1, 1, 1, 1, 1] });
-  };
+  async componentDidUpdate(prevProps, prevState, snapshot) {
+
+    if (this.props.web3 == null && this.props.status === "connected") {
+      await trackPromise(this.props.initWeb3());
+    }
+
+    if (prevProps.contract == null && this.props.contract != null && this.state.componentNeedsUpdate) {
+      this.setState({ componentNeedsUpdate: false });
+      await this.GetAllRequestLoans();
+    }
+  }
+
+  async componentDidMount() {
+    this._isMounted = true;
+    if (this.props.web3 == null && this.props.status === "connected") {
+      await trackPromise(this.props.initWeb3());
+    }
+    if (this.props.contract != null && this.state.componentNeedsUpdate) {
+      this.setState({componentNeedsUpdate: false});
+      await this.GetAllRequestLoans();
+    }
+  }
+
+  componentWillUnmount() {
+    this._isMounted = false;
+  }
 
   closePopup=() => {
     this.setState({
@@ -50,13 +73,14 @@ class Lender extends Component {
       showPopup: !this.state.showPopup
     }, async function() {
       console.log(`Lending ${this.state.lendingAmount} ETH to the loan ${this.state.loanToLend}`);
-      await this.state.contract.methods.invest(this.state.loanToLend)
+      let promise =  this.props.contract.methods.invest(this.state.loanToLend)
           .send({ from: this.state.accounts[0], value: this.state.lendingAmount*10**18})
           .then(res => {
             console.log('Success', res);
             alert(`You have successfully lent ${this.state.lendingAmount} ETH!`)
           })
           .catch(err => console.log(err))
+      await trackPromise(promise);
     });
   }
 
@@ -77,12 +101,13 @@ class Lender extends Component {
     </li>);
 */
     // fetch from contract
-    const loanHashes = await this.state.contract.methods.getHashesOfLoanRequests().call();
+    const loanHashesPromise = this.props.contract.methods.getHashesOfLoanRequests().call();
+    const loanHashes = await trackPromise(loanHashesPromise);
     console.log("hashes : " + loanHashes);
 
     loanHashes.forEach((hash) => {
       let contract;
-      contract = new this.state.web3.eth.Contract(LoanContract.abi, hash);
+      contract = new this.props.web3.eth.Contract(LoanContract.abi, hash);
 
       contract.methods.getProjectInfos().call().then(result => {
         console.log('result' + JSON.stringify(result));
@@ -90,7 +115,7 @@ class Lender extends Component {
         const loanInfos = {
           address: contract._address,
           interest: result[0],
-          requestedAmount: this.state.web3.utils.fromWei(result[1].toString())
+          requestedAmount: this.props.web3.utils.fromWei(result[1].toString())
         };
         const dataListLoans = this.state.loanRequestsList.slice();
         dataListLoans.push(loanInfos);
@@ -113,23 +138,21 @@ class Lender extends Component {
     return (
       this.state.loanRequestsList.map((loanInfo, index) =>
         <div key={index} style={{padding:10}}  >
-          <div class="card-rounded grow shadow p-3 mb-5 bg-white">
+          <div className="card-rounded grow shadow p-3 mb-5 bg-white">
           <Card style={{ width: '18rem',borderStyle:"none", cursor:"pointer" }} key={index} >
             <Card.Body>
               <Card.Title>Name project</Card.Title>
-              <Card.Text>
-                <p style={{margin:"20px"}}>
-                  Description of the project
-                </p>
-                <p>
-                  Requested amount : {loanInfo.requestedAmount} ETH
-                </p>
-                <p>
-                  {loanInfo.interest}% APY
-                </p>
+              <p style={{margin:"20px"}}>
+                Description of the project
+              </p>
+              <p>
+                Requested amount : {loanInfo.requestedAmount} ETH
+              </p>
+              <p>
+                {loanInfo.interest}% APY
+              </p>
 
-                <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
-              </Card.Text>
+              <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
               <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">
                 <span role="img" aria-label="cash">💰</span>
                 Lend money
@@ -149,7 +172,8 @@ class Lender extends Component {
   render() {
     return (
       <div>
-          <div style={{display:"flex", flexWrap:"wrap", justifyContent:"flex-start", width:"64rem", margin:"auto"}}>
+        <LoadingSpiner/>
+        <div style={{display:"flex", flexWrap:"wrap", justifyContent:"flex-start", width:"64rem", margin:"auto"}}>
           {this.PresentRequestLoans()}
           {this.state.showPopup ?
                     <LenderPopup
