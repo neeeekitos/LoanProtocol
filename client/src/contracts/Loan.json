@@ -33482,7 +33482,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.1",
-  "updatedAt": "2021-08-24T06:14:43.060Z",
+  "updatedAt": "2021-08-24T09:13:12.958Z",
   "devdoc": {
     "events": {
       "LogCreditInitialized(address,uint256)": {
