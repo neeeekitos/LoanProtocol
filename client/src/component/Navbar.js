@@ -12,9 +12,7 @@ export default function CustomNavbar(props) {
     const { status, account } = useMetaMask();
     const [balance, setBalance] = useState(0);
 
-
     if (status === "connected" && props.web3) {
-
         props.web3.eth.getBalance(account).then(value => {
             setBalance(props.web3.utils.fromWei(value, 'ether'));
         });

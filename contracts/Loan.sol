@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./DynamicCollateralLending.sol";
+import "./LoanController.sol";
 import "./User.sol";
 import "./Exponential.sol";
 import "./TScoreController.sol";
@@ -14,6 +16,7 @@ contract Loan is Exponential{
     /** @dev Loan related infos
     *
     */
+    address borrowerUser;
     address borrower;
     address tScoreController;
     // Requested amount for a loan
@@ -26,13 +29,18 @@ contract Loan is Exponential{
     bool active = false;
 
     uint returnAmount;
-    uint256 loanCreationDate;
+    uint loanCreationDate;
     uint lastRepaymentDate;
     uint remainingPayments;
-    uint repaymentInstallment;
+    Exp repaymentInstallment;
     uint repaidAmount;
-    uint collateral; // percentage of a requested amount
+    uint collateral;
+/*
     uint constant loanExpirationInterval = 86400; // 1 DAY
+*/
+    uint constant loanExpirationInterval = 120; // 2 min
+    uint constant minRecommendValue = 50;
+    string tokenURI;
 
     /** @dev Investors and Recommenders infos
     *
@@ -67,7 +75,7 @@ contract Loan is Exponential{
     /** @dev Events
     *
     */
-    event LogCreditInitialized(address indexed _address, uint indexed timestamp);
+    event LoanInitialized(address indexed _address, uint indexed timestamp, uint indexed _repaymentInstallment);
     event LoanStateChanged(State indexed state, uint indexed timestamp);
     event LogCreditStateActiveChanged(bool indexed active, uint indexed timestamp);
 
@@ -122,22 +130,26 @@ contract Loan is Exponential{
 
     modifier canInvest() {
         require(state == State.investment);
+        require(block.timestamp - loanCreationDate < loanExpirationInterval);
         _;
     }
 
     modifier canRecommend() {
         require(state == State.investment && collateral > 0);
+        require(block.timestamp - loanCreationDate < loanExpirationInterval);
         _;
     }
 
     modifier canRepay() {
         require(state == State.repayment);
+        require(block.timestamp - loanCreationDate > loanExpirationInterval);
         _;
     }
 
     modifier canWithdraw() {
-        require(address(this).balance>= requestedAmount);
-        _;
+        require(address(this).balance >= requestedAmount);
+        require(block.timestamp - loanCreationDate > loanExpirationInterval);
+    _;
     }
 
     modifier isNotFraud() {
@@ -157,31 +169,36 @@ contract Loan is Exponential{
     }
 
     constructor (
+        address _borrowerUser,
         address _borrower,
         uint _requestedAmount,
         uint _repaymentsCount,
         uint _interest,
         uint _loanCreationDate,
-        address _tScoreController
+        address _tScoreController,
+        string memory _tokenURI
     ) public {
 
+        borrowerUser = _borrowerUser;
         borrower = _borrower;
         requestedAmount = _requestedAmount;
         repaymentsCount = _repaymentsCount;
         interest =  _interest;
         loanCreationDate = _loanCreationDate;
+        tokenURI = _tokenURI;
 
         // Calculate the amount to return by the borrower
         returnAmount = requestedAmount.add(interest);
 
         // Loan can only start when sufficient funds are invested
-
-        uint lastRepaymentDate = 0;
-        collateral = 2;
+        lastRepaymentDate = 0;
+        collateral = _requestedAmount; // initially the collateral is equal to the requested amount
         investorsCount = 0;
-        uint remainingPayments = _requestedAmount;
+        remainingPayments = _requestedAmount;
         /*uint repaymentInstallment = remainingPayments.div(_repaymentsCount);*/
-        uint repaidAmount = 0;
+        (, repaymentInstallment) = divExp(Exp({mantissa: _requestedAmount/1e18}), Exp({mantissa: _repaymentsCount}));
+
+        repaidAmount = 0;
 
         tScoreController = _tScoreController;
 
@@ -193,8 +210,12 @@ contract Loan is Exponential{
         return address(this).balance;
     }
 
-    function getProjectInfos() public view returns (uint256, uint256) {
-        return (interest, requestedAmount);
+    function getInfosForLender() public view returns (uint256, uint256, string memory, uint256) {
+        return (interest, requestedAmount, tokenURI, loanCreationDate);
+    }
+
+    function getInfosForRecommender() public view returns (uint256, uint256, uint256, string memory, uint256) {
+        return (interest, requestedAmount, requestTScore(), tokenURI, loanCreationDate);
     }
 
     function getInfosForBorrower() public view returns (
@@ -205,8 +226,11 @@ contract Loan is Exponential{
         uint256,
         uint256,
         uint256,
-        uint256)
-    {
+        uint256,
+        string memory,
+        uint256,
+        address
+    ) {
         return (
         requestedAmount,
         interest,
@@ -215,7 +239,10 @@ contract Loan is Exponential{
         recommendersCount,
         requestTScore(),
         collateral,
-        totalInvestedAmount);
+        totalInvestedAmount,
+        tokenURI,
+        loanCreationDate,
+        address(this));
     }
 
     /** @dev Trustworthiness score calculation function
@@ -223,7 +250,7 @@ contract Loan is Exponential{
       * borrower's attributes
       */
     function requestTScore() public view returns (uint) {
-        return TScoreController(tScoreController).getTScore(borrower);
+        return TScoreController(tScoreController).getTScore(borrowerUser);
     }
 
     /** @dev Recommend function.
@@ -232,21 +259,40 @@ contract Loan is Exponential{
       */
     function recommend(uint8 score, address recommenderAddress) public canRecommend payable {
 
-        require(score > 0 && score <= 100);
+        require(score > minRecommendValue && score <= 100);
         require(!recommenders[recommenderAddress], "You have already recommended");
 
-        totalRecommendedAmount += msg.value;
+        uint extraMoney = 0;
+        if (msg.value >= collateral) {
+            extraMoney = msg.value.sub(collateral);
+            assert(collateral == msg.value.sub(extraMoney));
+
+            // Assert that there is no overflow / underflow
+            assert(extraMoney <= msg.value);
+
+            if (extraMoney > 0) {
+                // return extra money to the sender
+                payable(recommenderAddress).transfer(extraMoney);
+                emit ExtraAmountRefunded(recommenderAddress, extraMoney, block.timestamp);
+            }
+
+            collateral = 0;
+        } else {
+            collateral -= (msg.value - extraMoney);
+        }
+
+        uint recommendedAmount = msg.value - extraMoney;
+        totalRecommendedAmount += recommendedAmount;
         recommenders[recommenderAddress] = true;
-        investedOrRecommendedAmount[recommenderAddress] = msg.value;
+        investedOrRecommendedAmount[recommenderAddress] = recommendedAmount;
         recommendedScore[recommenderAddress] = score;
 
         recommenderAddr.push(recommenderAddress);
         recommendersCount++;
 
-        TScoreController(tScoreController).updateSocialRecommendationScore(address(this), borrower, 0, 0);
+        TScoreController(tScoreController).updateSocialRecommendationScore(address(this), borrowerUser, 0, 0);
 
-        emit Recommended(recommenderAddress, msg.value, block.timestamp);
-
+        emit Recommended(recommenderAddress, recommendedAmount, block.timestamp);
     }
 
     /** @dev Invest function.
@@ -291,8 +337,9 @@ contract Loan is Exponential{
      * Allows borrower to make repayment installments.
      */
     function repay() public onlyBorrower canRepay payable {
+
         require(remainingPayments > 0);
-        require(msg.value >= repaymentInstallment);
+        require(msg.value >= repaymentInstallment.mantissa);
 
         assert(repaidAmount < returnAmount);
 
@@ -301,21 +348,23 @@ contract Loan is Exponential{
 
         uint extraMoney = 0;
 
-        if (msg.value > repaymentInstallment) {
+        if (msg.value > repaymentInstallment.mantissa) {
 
-            extraMoney = msg.value.sub(repaymentInstallment);
+            extraMoney = msg.value.sub(repaymentInstallment.mantissa);
 
-            assert(repaymentInstallment == msg.value.sub(extraMoney));
+            assert(repaymentInstallment.mantissa == msg.value.sub(extraMoney));
 
             // Check the underflow
             assert(extraMoney < msg.value);
 
             payable(msg.sender).transfer(extraMoney);
 
-            // TODO return event
+            emit ExtraAmountRefunded(msg.sender, extraMoney, block.timestamp);
         }
 
-        // TODO event borrower installement received
+        repaidAmount += (msg.value - extraMoney);
+
+        emit LogBorrowerRepaymentInstallment(msg.sender, msg.value - extraMoney, block.timestamp);
 
         if (repaidAmount == returnAmount) {
 
@@ -323,19 +372,19 @@ contract Loan is Exponential{
 
             state = State.interestReturns;
 
-            // TODO event credit state changed
+            emit LoanStateChanged(state, block.timestamp);
         }
     }
 
-    // TODO recheck and rewrite this function
     /** @dev Withdraw function.
       * It can only be executed while contract is in active state.
       * It is only accessible to the borrower.
       * It is only accessible if the needed amount is gathered in the contract.
       * It can only be executed once.
+      * It can be executed only after lending period
       * Transfers the gathered amount to the borrower.
       */
-    function withdraw() public isActive onlyBorrower canWithdraw isNotFraud {
+    function withdraw() public onlyBorrower canWithdraw isNotFraud payable {
         // Set the state to repayment so we can avoid reentrancy.
         state = State.repayment;
 

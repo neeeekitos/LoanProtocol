@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -6,7 +8,7 @@ import "./Loan.sol";
 import "./User.sol";
 import "./TScoreController.sol";
 
-contract DynamicCollateralLending {
+contract LoanController {
 
     using Math for uint;
 
@@ -27,7 +29,7 @@ contract DynamicCollateralLending {
     event LoanRequestedPosted(address indexed _address, uint indexed timestamp, address indexed _loanAddress, address _userAddress);
     event TScoreInitialized(address indexed _address, uint indexed timestamp);
 
-    function applyForLoan(uint _requestedAmount, uint _repaymentsCount, uint _interest) public {
+    function applyForLoan(uint _requestedAmount, uint _repaymentsCount, uint _interest, string memory _tokenURI) public {
 
         if (users[msg.sender] != User(address(0))) {
             // The user not fraudulent
@@ -39,7 +41,7 @@ contract DynamicCollateralLending {
             users[msg.sender] = new User();
         }
 
-        uint creationTime = block.timestamp+30;
+        uint creationTime = block.timestamp;
 /*
         TScore storage tScore;
         if (users[msg.sender] == address(0x0)) {
@@ -48,7 +50,16 @@ contract DynamicCollateralLending {
             tScore = users[msg.sender];
         }*/
 
-        Loan loan = new Loan(address(users[msg.sender]), _requestedAmount, _repaymentsCount, _interest, creationTime, tScoreController);
+        Loan loan = new Loan(
+            address(users[msg.sender]),
+            msg.sender,
+            _requestedAmount,
+            _repaymentsCount,
+            _interest,
+            creationTime,
+            tScoreController,
+            _tokenURI
+        );
 
         address loanAddr = address(loan);
 
@@ -80,8 +91,11 @@ contract DynamicCollateralLending {
         uint256,
         uint256,
         uint256,
-        uint256)
-    {
+        uint256,
+        string memory,
+        uint256,
+        address
+    ) {
         return Loan(users[msg.sender].activeLoan()).getInfosForBorrower();
     }
 

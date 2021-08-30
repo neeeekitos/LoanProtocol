@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 // import dbManagement from "./component/database";
 import getWeb3 from "./component/getWeb3";
-import DynamicCollateralLending from "./contracts/DynamicCollateralLending.json";
+import DynamicCollateralLending from "./contracts/LoanController.json";
 import {MetaMaskProvider} from "metamask-react";
 import CustomNavbar from "./component/Navbar";
 import "./App.css";

@@ -1,4 +1,4 @@
-var DynamicCollateralLending = artifacts.require("./DynamicCollateralLending.sol");
+var DynamicCollateralLending = artifacts.require("./LoanController.sol");
 
 module.exports = function(deployer) {
   deployer.deploy(DynamicCollateralLending);

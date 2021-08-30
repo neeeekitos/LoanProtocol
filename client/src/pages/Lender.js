@@ -6,6 +6,9 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import "../index.css";
 import { trackPromise } from 'react-promise-tracker';
 import LoadingSpiner from '../component/LoadingSpiner';
+import axios from "axios";
+import styles from "./card.module.css";
+import Countdown from "react-countdown";
 
 class Lender extends Component {
 
@@ -74,7 +77,7 @@ class Lender extends Component {
     }, async function() {
       console.log(`Lending ${this.state.lendingAmount} ETH to the loan ${this.state.loanToLend}`);
       let promise =  this.props.contract.methods.invest(this.state.loanToLend)
-          .send({ from: this.state.accounts[0], value: this.state.lendingAmount*10**18})
+          .send({ from: this.state.account, value: this.state.lendingAmount*10**18})
           .then(res => {
             console.log('Success', res);
             alert(`You have successfully lent ${this.state.lendingAmount} ETH!`)
@@ -87,42 +90,56 @@ class Lender extends Component {
   GetAllRequestLoans = async () => {
     this.setState({ message: "Fetching all loan requests.." });
 
-    //fetch from database
-    /*const existingLoans = await dbManagement.getLoanRequestsDb(this.state.orbitDb, this.state.accounts[0]);
-    console.log("Existing loans : ");
-    existingLoans.forEach((loan, index) => {
-      console.log("Loan " + index + '\n' +
-        'Description: ' + loan.payload.value.loanDescription + '\n' +
-        'Amount: ' + loan.payload.value.requestedAmount + '\n\n');
-    });
-    const dataList = existingLoans.map((loan) => <li key={loan.index}>
-      <p>Description: {loan.payload.value.loanDescription}</p>
-      <p>Amount: {loan.payload.value.requestedAmount}</p>
-    </li>);
-*/
     // fetch from contract
     const loanHashesPromise = this.props.contract.methods.getHashesOfLoanRequests().call();
     const loanHashes = await trackPromise(loanHashesPromise);
-    console.log("hashes : " + loanHashes);
 
-    loanHashes.forEach((hash) => {
+    for (const hash of loanHashes) {
       let contract;
       contract = new this.props.web3.eth.Contract(LoanContract.abi, hash);
 
-      contract.methods.getProjectInfos().call().then(result => {
+      contract.methods.getInfosForLender().call().then(async result => {
         console.log('result' + JSON.stringify(result));
+
+        // convert IPFS link to the gateway url
+        const tokenURI = result[2];
+        const gatewayURL = process.env.REACT_APP_IPFS_GATEWAY + tokenURI.replace("ipfs://", "");
+
+        let projectName;
+        let projectDescription;
+        let projectImage;
+        try {
+          console.log(gatewayURL)
+          const metadataPromise = axios.get(gatewayURL);
+          const metadata = await trackPromise(metadataPromise);
+
+          projectName = metadata.data.name;
+          projectDescription = metadata.data.description;
+          projectImage = process.env.REACT_APP_IPFS_GATEWAY + metadata.data.image.replace("ipfs://", "");
+
+        } catch (error) {
+          console.log("error", error);
+          if (error.response && error.response.status === 503)
+            alert('Ouups... It seems that IPFS gateway is down... We can\'t fetch project description & image for instance')
+        }
 
         const loanInfos = {
           address: contract._address,
           interest: result[0],
-          requestedAmount: this.props.web3.utils.fromWei(result[1].toString())
+          requestedAmount: this.props.web3.utils.fromWei(result[1].toString()),
+          loanCreationDate: result[3],
+          canInvest: Date.now() < (result[3]*1000
+              + process.env.REACT_APP_LOAN_EXPIRATION_INTERVAL*1000),
+          projectName,
+          projectDescription,
+          projectImage
         };
         const dataListLoans = this.state.loanRequestsList.slice();
         dataListLoans.push(loanInfos);
         this.setState({loanRequestsList: dataListLoans});
         console.log(dataListLoans);
       });
-    });
+    }
 
     console.log(this.state.loanRequestsList);
     //this.setState({ loanRequestsList: dataList });
@@ -138,29 +155,41 @@ class Lender extends Component {
     return (
       this.state.loanRequestsList.map((loanInfo, index) =>
         <div key={index} style={{padding:10}}  >
-          <div className="card-rounded grow shadow p-3 mb-5 bg-white">
-          <Card style={{ width: '18rem',borderStyle:"none", cursor:"pointer" }} key={index} >
+          <Card className={`${styles.Card} grow shadow bg-white`} key={index}>
+            <Card.Img src={loanInfo.projectImage} alt="Card image" className={styles.ImgTeaser} />
             <Card.Body>
-              <Card.Title>Name project</Card.Title>
+              <Card.Title><b>{loanInfo.projectName}</b></Card.Title>
               <p style={{margin:"20px"}}>
-                Description of the project
+                Description : <b>{loanInfo.projectDescription}</b>
               </p>
               <p>
-                Requested amount : {loanInfo.requestedAmount} ETH
+                Lending ends in : &nbsp;
+                <b>
+                  <Countdown onComplete={() => {
+                    const loans = this.state.loanRequestsList.slice();
+                    loans[index].canInvest = false;
+                    this.setState({loanRequestsList: loans});
+                  }}
+                             daysInHours={true}
+                             date={loanInfo.loanCreationDate*1000 + process.env.REACT_APP_LOAN_EXPIRATION_INTERVAL*1000} />
+                </b>
               </p>
               <p>
-                {loanInfo.interest}% APY
+                Requested amount : <b>{loanInfo.requestedAmount} ETH</b>
               </p>
-
-              <div style={{marginTop:"5px", fontSize: "0.55rem", listStyleType: "none"}}>{loanInfo.address}</div>
-              <Button onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">
+              <p>
+                APY : <b>{loanInfo.interest}%</b>
+              </p>
+              <p style={{fontSize: "0.55rem", listStyleType: "none"}}>
+                {loanInfo.address}
+              </p>
+              <Button disabled={!loanInfo.canInvest} onClick={() => this.handlePopUp(loanInfo.address)} variant="primary">
                 <span role="img" aria-label="cash">💰</span>
                 Lend money
                 <span role="img" aria-label="cash">💰</span>
               </Button>
             </Card.Body>
           </Card>
-        </div>
         </div>
       ))
   }

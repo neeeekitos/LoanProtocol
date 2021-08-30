@@ -1,0 +1,15 @@
+.ImgTeaser {
+    width: 100%;
+    object-fit: cover;
+    max-height: 220px;
+}
+
+.Card {
+    border-radius: 20px;
+    overflow: hidden;
+    padding: 0 !important;
+    width: 18rem;
+    border-style: none;
+    cursor: pointer;
+    margin: 30px;
+}
